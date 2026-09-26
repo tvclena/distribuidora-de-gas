@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#166f9f">
+<title>Contas a Receber</title>
+<style>
+:root{
+  --blue:#166f9f;--blue-dark:#0e5d8a;--active:#087fc2;--blue-soft:#eef8fe;
+  --bg:#e9edf1;--panel:#fff;--border:#d8dee4;--text:#263238;--muted:#6f7a83;
+  --success:#1f8b57;--danger:#c53f3f;--warning:#b57d10;--purple:#7652bd;
+  --shadow:0 2px 10px rgba(24,48,66,.09)
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;min-height:100%;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+body{padding:14px}
+button,input,select,textarea{font:inherit}
+.page{max-width:1600px;margin:0 auto}
+.header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px}
+.header h1{font-size:22px;line-height:1.15;color:#22323d;font-weight:850}
+.header p{margin-top:6px;font-size:12px;color:var(--muted)}
+.header-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:0;border-radius:9px;height:40px;padding:0 14px;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;font-weight:750;font-size:12px;transition:.16s ease;white-space:nowrap}
+.btn:hover{transform:translateY(-1px)}
+.btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+.btn-primary{background:linear-gradient(135deg,var(--blue-dark),var(--active));color:#fff;box-shadow:0 7px 18px rgba(8,127,194,.18)}
+.btn-secondary{background:#fff;color:#3e4d56;border:1px solid var(--border)}
+.btn-success{background:#edf9f3;color:var(--success);border:1px solid #cee9dc}
+.btn-danger{background:#fff1f1;color:var(--danger);border:1px solid #ffd2d2}
+.toolbar{display:grid;grid-template-columns:minmax(250px,1.35fr) repeat(5,minmax(135px,.55fr)) auto;gap:8px;background:#fff;border:1px solid var(--border);box-shadow:var(--shadow);padding:10px;margin-bottom:12px}
+.search{min-height:40px;display:flex;align-items:center;gap:8px;padding:0 11px;border:1px solid var(--border);border-radius:8px;background:#fff}
+.search svg{width:17px;height:17px;stroke:#82919b;fill:none;stroke-width:2}
+.search input{border:0;outline:0;width:100%;background:transparent;color:var(--text);font-size:12px}
+.control{width:100%;min-height:40px;border:1px solid var(--border);border-radius:8px;padding:0 10px;outline:0;background:#fff;color:#34434c;font-size:11px}
+.control:focus{border-color:#4b9eca;box-shadow:0 0 0 3px rgba(8,127,194,.08)}
+.summary{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px}
+.stat{background:#fff;border:1px solid var(--border);padding:14px;box-shadow:var(--shadow)}
+.stat small{display:block;color:#83909a;font-size:10px;text-transform:uppercase;letter-spacing:.06em;font-weight:800}
+.stat strong{display:block;margin-top:5px;font-size:20px;color:#24343f}
+.stat span{display:block;margin-top:3px;color:#8a969e;font-size:10px}
+.stat.pending strong{color:var(--warning)}.stat.overdue strong{color:var(--danger)}.stat.paid strong{color:var(--success)}
+.panel{background:#fff;border:1px solid var(--border);box-shadow:var(--shadow);min-height:390px;overflow:hidden}
+.table-wrap{overflow:auto}
+table{width:100%;border-collapse:collapse;min-width:1320px}
+thead th{position:sticky;top:0;z-index:2;background:#f7f9fa;color:#66747d;font-size:10px;text-transform:uppercase;letter-spacing:.045em;text-align:left;padding:11px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody td{padding:11px 12px;border-bottom:1px solid #edf1f3;font-size:11px;vertical-align:middle}
+tbody tr:hover{background:#fbfdfe}
+.number{font-weight:900;color:#1f3747}.meta{margin-top:3px;color:#8a969e;font-size:9px}.name{font-weight:800;color:#33444e}.money{font-weight:850}
+.badge{display:inline-flex;align-items:center;min-height:23px;padding:0 8px;border-radius:999px;font-size:9px;font-weight:850;border:1px solid transparent;white-space:nowrap}
+.badge-pending{background:#fff7e8;color:#9b6b12;border-color:#f4dfb3}
+.badge-partial{background:#eef8fe;color:#087fc2;border-color:#cfeaf9}
+.badge-paid{background:#edf9f3;color:#1f8b57;border-color:#d1efdf}
+.badge-overdue{background:#fff0f0;color:#b23d3d;border-color:#ffd1d1}
+.badge-cancelled{background:#f4f5f6;color:#7b858d;border-color:#e1e5e8}
+.badge-order{background:#f5f0ff;color:#7652bd;border-color:#e6dafa}
+.actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap;min-width:260px}
+.action{min-height:30px;border:1px solid var(--border);border-radius:7px;background:#fff;padding:0 8px;cursor:pointer;font-size:9px;font-weight:850;color:#596871}
+.action:hover{background:#f5f9fb}.action.edit{color:var(--active)}.action.pay{color:var(--success);border-color:#cfe8dc;background:#f7fcf9}.action.danger{color:var(--danger)}
+.loading{display:none;min-height:330px;align-items:center;justify-content:center}.loading.show{display:flex}
+.spinner{width:32px;height:32px;border:3px solid #dce9f0;border-top-color:var(--active);border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.empty{min-height:330px;display:none;align-items:center;justify-content:center;text-align:center;padding:30px}.empty.show{display:flex}
+.empty h3{font-size:16px;color:#33434d;margin-bottom:6px}.empty p{font-size:12px;color:#7e8b94}
+.modal{position:fixed;inset:0;z-index:5000;display:none;align-items:center;justify-content:center;padding:12px;background:rgba(13,31,43,.42);backdrop-filter:blur(3px)}.modal.show{display:flex}
+.modal-card{width:min(900px,100%);max-height:calc(100vh - 24px);overflow:auto;background:#fff;border-radius:16px;box-shadow:0 25px 70px rgba(12,32,45,.26)}.modal-card.small{width:min(680px,100%)}
+.modal-head{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 18px;background:#fff;border-bottom:1px solid #e5eaed}
+.modal-head h2{font-size:17px}.modal-head p{margin-top:3px;font-size:10px;color:#8a969e}.close-btn{width:34px;height:34px;border:1px solid var(--border);border-radius:9px;background:#fff;display:grid;place-items:center;cursor:pointer;color:#64717a}
+.form-body{padding:16px 18px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field.full{grid-column:1/-1}.field label{display:block;margin:0 0 6px 2px;font-size:10px;color:#596871;font-weight:800}.field input,.field select,.field textarea{width:100%;border:1px solid var(--border);border-radius:8px;outline:0;background:#fff;color:#2e3c45;padding:0 10px;font-size:12px}.field input,.field select{height:40px}.field textarea{min-height:82px;padding-top:10px;resize:vertical}.field input:focus,.field select:focus,.field textarea:focus{border-color:#4b9eca;box-shadow:0 0 0 3px rgba(8,127,194,.08)}
+.client-wrap{position:relative}.menu{display:none;position:absolute;left:0;right:0;top:64px;z-index:30;max-height:260px;overflow:auto;background:#fff;border:1px solid var(--border);border-radius:9px;box-shadow:0 12px 28px rgba(20,48,65,.16)}.menu.show{display:block}.option{padding:10px 11px;border-bottom:1px solid #eef2f4;cursor:pointer}.option:hover{background:#f5f9fb}.option strong{display:block;font-size:11px}.option small{display:block;margin-top:3px;color:#89959d;font-size:9px}
+.values{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}.value-box{padding:10px;border:1px solid #e1e7eb;background:#fbfcfd}.value-box small{display:block;font-size:9px;color:#8a969e;text-transform:uppercase;font-weight:800}.value-box strong{display:block;margin-top:4px;font-size:14px}
+.history{margin-top:12px;border:1px solid #e1e7eb}.history-title{padding:10px;background:#f7f9fa;border-bottom:1px solid #e1e7eb;font-size:10px;text-transform:uppercase;font-weight:850}.history-row{display:grid;grid-template-columns:130px 1fr 120px 120px;gap:8px;padding:10px;border-bottom:1px solid #edf1f3;font-size:10px}.history-row:last-child{border-bottom:0}
+.modal-foot{position:sticky;bottom:0;z-index:10;display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;background:#fff;border-top:1px solid #e7ecef}
+.toast-wrap{position:fixed;right:18px;bottom:18px;z-index:9999;width:min(360px,calc(100vw - 36px));display:grid;gap:8px}.toast{background:#fff;border:1px solid var(--border);border-left:4px solid var(--active);box-shadow:0 12px 32px rgba(13,40,58,.18);padding:12px 13px;border-radius:10px;font-size:11px}.toast.error{border-left-color:var(--danger)}.toast.success{border-left-color:var(--success)}
+@media(max-width:1150px){.toolbar{grid-template-columns:1fr 1fr}.toolbar .search{grid-column:1/-1}.summary{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:650px){body{padding:8px}.header h1{font-size:19px}.header p{display:none}.toolbar{grid-template-columns:1fr;padding:8px}.toolbar .search{grid-column:auto}.summary{grid-template-columns:repeat(2,1fr);gap:7px}.grid,.values{grid-template-columns:1fr}.field.full{grid-column:auto}.modal{padding:5px}.history-row{grid-template-columns:1fr 1fr}.history-row>:nth-child(2){grid-column:1/-1}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div><h1>Contas a Receber</h1><p>Controle títulos, parcelas, vencimentos, baixas e recebimentos.</p></div>
+    <div class="header-actions">
+      <button class="btn btn-primary" id="btnNovo">+ Novo título</button>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="busca" placeholder="Buscar cliente, documento, descrição ou pedido..."></div>
+    <select class="control" id="fStatus"><option value="">Todos status</option><option value="pendente">Pendentes</option><option value="parcial">Parciais</option><option value="vencido">Vencidos</option><option value="pago">Pagos</option><option value="cancelado">Cancelados</option></select>
+    <select class="control" id="fLoja"><option value="">Todas as lojas</option></select>
+    <select class="control" id="fOrigem"><option value="">Todas origens</option><option value="manual">Manual</option><option value="pedido">Pedidos</option></select>
+    <input class="control" id="fInicio" type="date" title="Vencimento inicial">
+    <input class="control" id="fFim" type="date" title="Vencimento final">
+    <button class="btn btn-secondary" id="btnAtualizar">Atualizar</button>
+  </div>
+
+  <div class="summary">
+    <div class="stat"><small>Total de títulos</small><strong id="sTotal">0</strong><span>no filtro atual</span></div>
+    <div class="stat pending"><small>Em aberto</small><strong id="sAberto">R$ 0,00</strong><span>saldo a receber</span></div>
+    <div class="stat overdue"><small>Vencido</small><strong id="sVencido">R$ 0,00</strong><span>saldo vencido</span></div>
+    <div class="stat paid"><small>Recebido</small><strong id="sRecebido">R$ 0,00</strong><span>valor já baixado</span></div>
+    <div class="stat"><small>Valor original</small><strong id="sOriginal">R$ 0,00</strong><span>títulos do filtro</span></div>
+  </div>
+
+  <div class="panel">
+    <div class="loading" id="loading"><div class="spinner"></div></div>
+    <div class="table-wrap" id="tableWrap">
+      <table>
+        <thead><tr><th>Título</th><th>Cliente</th><th>Loja</th><th>Descrição</th><th>Vencimento</th><th>Original</th><th>Recebido</th><th>Saldo</th><th>Status</th><th style="width:270px">Ações</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="empty"><div><h3>Nenhum título encontrado</h3><p>Crie um título manual ou faça uma venda a prazo.</p></div></div>
+  </div>
+</div>
+
+<div class="modal" id="modalTitulo">
+  <div class="modal-card">
+    <div class="modal-head"><div><h2 id="tituloModal">Novo título</h2><p id="subTituloModal">Cadastre uma nova conta a receber.</p></div><button class="close-btn" data-close="modalTitulo">✕</button></div>
+    <form id="formTitulo">
+      <div class="form-body">
+        <div class="grid">
+          <div class="field full client-wrap">
+            <label>Cliente *</label>
+            <input type="hidden" id="cliente_id">
+            <input id="clienteBusca" autocomplete="off" placeholder="Digite nome, CPF/CNPJ, telefone ou e-mail">
+            <div class="menu" id="clienteMenu"></div>
+          </div>
+          <div class="field"><label>Loja / filial</label><select id="loja_id"><option value="">Sem loja</option></select></div>
+          <div class="field"><label>Documento / referência</label><input id="documento" placeholder="Ex.: NF 123, contrato..."></div>
+          <div class="field full"><label>Descrição *</label><input id="descricao" required placeholder="Ex.: Venda a prazo, mensalidade, parcela..."></div>
+          <div class="field"><label>Data de emissão</label><input id="data_emissao" type="date"></div>
+          <div class="field"><label>Competência</label><input id="competencia" type="month"></div>
+          <div class="field"><label>Vencimento *</label><input id="vencimento" type="date" required></div>
+          <div class="field"><label>Valor original *</label><input id="valor_original" inputmode="decimal" placeholder="0,00" required></div>
+          <div class="field"><label>Desconto</label><input id="desconto" inputmode="decimal" value="0,00"></div>
+          <div class="field"><label>Juros</label><input id="juros" inputmode="decimal" value="0,00"></div>
+          <div class="field"><label>Multa</label><input id="multa" inputmode="decimal" value="0,00"></div>
+          <div class="field"><label>Status</label><select id="status"><option value="pendente">Pendente</option><option value="cancelado">Cancelado</option></select></div>
+          <div class="field full"><label>Observações</label><textarea id="observacoes" placeholder="Observações do título..."></textarea></div>
+        </div>
+      </div>
+      <div class="modal-foot"><button type="button" class="btn btn-secondary" data-close="modalTitulo">Cancelar</button><button class="btn btn-primary" id="btnSalvar" type="submit">Salvar título</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="modalBaixa">
+  <div class="modal-card small">
+    <div class="modal-head"><div><h2>Registrar recebimento</h2><p id="baixaSub"></p></div><button class="close-btn" data-close="modalBaixa">✕</button></div>
+    <div class="form-body">
+      <div class="values">
+        <div class="value-box"><small>Original</small><strong id="bOriginal">R$ 0,00</strong></div>
+        <div class="value-box"><small>Recebido</small><strong id="bRecebido">R$ 0,00</strong></div>
+        <div class="value-box"><small>Saldo</small><strong id="bSaldo">R$ 0,00</strong></div>
+        <div class="value-box"><small>Vencimento</small><strong id="bVenc">-</strong></div>
+      </div>
+      <div class="grid" style="margin-top:12px">
+        <div class="field"><label>Valor recebido *</label><input id="baixa_valor" inputmode="decimal"></div>
+        <div class="field"><label>Data do recebimento *</label><input id="baixa_data" type="date"></div>
+        <div class="field"><label>Forma de pagamento</label><select id="baixa_forma"><option value="pix">PIX</option><option value="dinheiro">Dinheiro</option><option value="cartao_credito">Cartão de crédito</option><option value="cartao_debito">Cartão de débito</option><option value="boleto">Boleto</option><option value="transferencia">Transferência</option><option value="outro">Outro</option></select></div>
+        <div class="field"><label>Referência / comprovante</label><input id="baixa_referencia"></div>
+        <div class="field full"><label>Observação</label><textarea id="baixa_obs"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-secondary" data-close="modalBaixa">Cancelar</button><button class="btn btn-success" id="btnConfirmarBaixa">Registrar recebimento</button></div>
+  </div>
+</div>
+
+<div class="modal" id="modalDetalhe">
+  <div class="modal-card small">
+    <div class="modal-head"><div><h2>Detalhes do título</h2><p id="detSub"></p></div><button class="close-btn" data-close="modalDetalhe">✕</button></div>
+    <div class="form-body" id="detBody"></div>
+    <div class="modal-foot"><button class="btn btn-secondary" data-close="modalDetalhe">Fechar</button></div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+const API="/api/contas-receber";
+const API_CLIENTES="/api/clientes-fornecedores";
+const API_LOJAS="/api/lojas";
+
+let contas=[],clientes=[],lojas=[],editandoId=null,baixaId=null;
+const $=id=>document.getElementById(id);
+const money=new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"});
+
+function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function parseNum(v){if(v===null||v===undefined||v==="")return 0;let s=String(v).trim().replace(/\s/g,"");if(s.includes(",")&&s.includes("."))s=s.replace(/\./g,"").replace(",",".");else if(s.includes(","))s=s.replace(",",".");const n=Number(s);return Number.isFinite(n)?n:0}
+function hoje(){return new Date().toISOString().slice(0,10)}
+function toast(msg,t="success"){const e=document.createElement("div");e.className=`toast ${t}`;e.textContent=msg;$("toastWrap").appendChild(e);setTimeout(()=>e.remove(),3500)}
+async function req(url,opt={}){const r=await fetch(url,{credentials:"include",cache:"no-store",headers:{"Content-Type":"application/json",...(opt.headers||{})},...opt});let d={};try{d=await r.json()}catch{}if(r.status===401){window.top.location.href="/";throw new Error("Sessão expirada.")}if(!r.ok)throw new Error(d.error||"Erro na operação.");return d}
+function abrir(id){$(id).classList.add("show")}function fechar(id){$(id).classList.remove("show")}
+document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>fechar(b.dataset.close));
+document.querySelectorAll(".modal").forEach(m=>m.onclick=e=>{if(e.target===m)fechar(m.id)});
+
+function statusReal(x){
+  if(x.status==="cancelado"||x.status==="pago")return x.status;
+  if(Number(x.saldo||0)<=0)return "pago";
+  if(Number(x.valor_recebido||0)>0)return String(x.vencimento)<hoje()?"vencido":"parcial";
+  return String(x.vencimento)<hoje()?"vencido":"pendente";
+}
+function badgeStatus(x){const s=statusReal(x),m={pendente:["badge-pending","Pendente"],parcial:["badge-partial","Parcial"],vencido:["badge-overdue","Vencido"],pago:["badge-paid","Pago"],cancelado:["badge-cancelled","Cancelado"]};const a=m[s]||m.pendente;return `<span class="badge ${a[0]}">${a[1]}</span>`}
+function origem(x){return x.origem==="pedido"?`<span class="badge badge-order">Pedido${x.pedido_numero?` #${esc(x.pedido_numero)}`:""}</span>`:"Manual"}
+
+async function bases(){
+  const [c,l]=await Promise.all([req(API_CLIENTES),req(API_LOJAS)]);
+  clientes=(c.items||[]).filter(x=>x.ativo!==false&&(x.tipo==="cliente"||x.tipo==="ambos"));
+  lojas=(l.items||[]).filter(x=>x.ativo!==false);
+  $("loja_id").innerHTML='<option value="">Sem loja</option>'+lojas.map(x=>`<option value="${x.id}">${esc(x.nome)}</option>`).join("");
+  $("fLoja").innerHTML='<option value="">Todas as lojas</option>'+lojas.map(x=>`<option value="${x.id}">${esc(x.nome)}</option>`).join("")
+}
+async function carregar(){
+  $("loading").classList.add("show");$("tableWrap").style.display="none";$("empty").classList.remove("show");
+  try{const d=await req(API);contas=d.items||[];render()}
+  catch(e){toast(e.message,"error");contas=[];render()}
+  finally{$("loading").classList.remove("show")}
+}
+function filtrados(){
+  const q=$("busca").value.trim().toLowerCase(),st=$("fStatus").value,loja=$("fLoja").value,orig=$("fOrigem").value,ini=$("fInicio").value,fim=$("fFim").value;
+  return contas.filter(x=>{
+    const txt=[x.numero,x.cliente_nome,x.documento,x.descricao,x.pedido_numero].filter(Boolean).join(" ").toLowerCase();
+    if(q&&!txt.includes(q))return false;
+    if(st&&statusReal(x)!==st)return false;
+    if(loja&&x.loja_id!==loja)return false;
+    if(orig&&x.origem!==orig)return false;
+    if(ini&&String(x.vencimento)<ini)return false;
+    if(fim&&String(x.vencimento)>fim)return false;
+    return true
+  })
+}
+function render(){
+  const list=filtrados();
+  $("sTotal").textContent=list.length;
+  $("sAberto").textContent=money.format(list.filter(x=>!["pago","cancelado"].includes(statusReal(x))).reduce((a,x)=>a+Number(x.saldo||0),0));
+  $("sVencido").textContent=money.format(list.filter(x=>statusReal(x)==="vencido").reduce((a,x)=>a+Number(x.saldo||0),0));
+  $("sRecebido").textContent=money.format(list.reduce((a,x)=>a+Number(x.valor_recebido||0),0));
+  $("sOriginal").textContent=money.format(list.reduce((a,x)=>a+Number(x.valor_original||0),0));
+  if(!list.length){$("tableWrap").style.display="none";$("empty").classList.add("show");return}
+  $("empty").classList.remove("show");$("tableWrap").style.display="block";
+  $("tbody").innerHTML=list.map(x=>`<tr>
+    <td><div class="number">#${esc(x.numero)}</div><div class="meta">${origem(x)}</div></td>
+    <td><div class="name">${esc(x.cliente_nome||"-")}</div><div class="meta">${esc(x.cliente_documento||"")}</div></td>
+    <td>${esc(x.loja_nome||"-")}</td>
+    <td><div>${esc(x.descricao||"-")}</div><div class="meta">${esc(x.documento||"")}</div></td>
+    <td>${new Date(x.vencimento+"T12:00:00").toLocaleDateString("pt-BR")}</td>
+    <td class="money">${money.format(Number(x.valor_original||0))}</td>
+    <td>${money.format(Number(x.valor_recebido||0))}</td>
+    <td class="money">${money.format(Number(x.saldo||0))}</td>
+    <td>${badgeStatus(x)}</td>
+    <td><div class="actions">
+      <button class="action" onclick="detalhe('${x.id}')">Ver</button>
+      ${x.status!=="cancelado"&&x.status!=="pago"?`<button class="action edit" onclick="editar('${x.id}')">Editar</button>`:""}
+      ${x.status!=="cancelado"&&Number(x.saldo||0)>0?`<button class="action pay" onclick="abrirBaixa('${x.id}')">Receber</button>`:""}
+      ${x.status==="pago"||Number(x.saldo||0)<=0?`<button class="action" onclick="reabrir('${x.id}')">Reabrir</button>`:""}
+      ${x.status!=="cancelado"&&Number(x.valor_recebido||0)===0?`<button class="action danger" onclick="cancelar('${x.id}')">Cancelar</button>`:""}
+    </div></td>
+  </tr>`).join("")
+}
+
+function selecionarCliente(c){
+  $("cliente_id").value=c?.id||"";
+  $("clienteBusca").value=c?(c.nome_fantasia||c.nome||""):"";
+  $("clienteMenu").classList.remove("show")
+}
+$("clienteBusca").addEventListener("input",()=>{
+  $("cliente_id").value="";
+  const q=$("clienteBusca").value.trim().toLowerCase();
+  if(!q){$("clienteMenu").classList.remove("show");return}
+  const list=clientes.filter(c=>[c.nome,c.nome_fantasia,c.documento,c.telefone,c.whatsapp,c.email].filter(Boolean).join(" ").toLowerCase().includes(q)).slice(0,15);
+  $("clienteMenu").innerHTML=list.map(c=>`<div class="option" data-id="${c.id}"><strong>${esc(c.nome_fantasia||c.nome)}</strong><small>${esc([c.documento,c.whatsapp||c.telefone,c.email].filter(Boolean).join(" • "))}</small></div>`).join("")||'<div class="option"><small>Nenhum cliente encontrado.</small></div>';
+  $("clienteMenu").classList.add("show");
+  $("clienteMenu").querySelectorAll("[data-id]").forEach(el=>el.onclick=()=>selecionarCliente(clientes.find(c=>c.id===el.dataset.id)))
+});
+document.addEventListener("click",e=>{if(!e.target.closest(".client-wrap"))$("clienteMenu").classList.remove("show")});
+
+function novo(){
+  editandoId=null;$("formTitulo").reset();$("tituloModal").textContent="Novo título";$("subTituloModal").textContent="Cadastre uma nova conta a receber.";
+  $("data_emissao").value=hoje();$("competencia").value=hoje().slice(0,7);$("vencimento").value=hoje();$("status").value="pendente";$("desconto").value="0,00";$("juros").value="0,00";$("multa").value="0,00";selecionarCliente(null);abrir("modalTitulo")
+}
+$("btnNovo").onclick=novo;
+
+function editar(id){
+  const x=contas.find(i=>i.id===id);if(!x)return;
+  editandoId=id;$("tituloModal").textContent=`Editar título #${x.numero}`;$("subTituloModal").textContent="Altere os dados financeiros e o vencimento.";
+  $("cliente_id").value=x.cliente_id||"";$("clienteBusca").value=x.cliente_nome||"";$("loja_id").value=x.loja_id||"";$("documento").value=x.documento||"";$("descricao").value=x.descricao||"";$("data_emissao").value=x.data_emissao||"";$("competencia").value=x.competencia?String(x.competencia).slice(0,7):"";$("vencimento").value=x.vencimento||"";$("valor_original").value=Number(x.valor_original||0).toFixed(2).replace(".",",");$("desconto").value=Number(x.desconto||0).toFixed(2).replace(".",",");$("juros").value=Number(x.juros||0).toFixed(2).replace(".",",");$("multa").value=Number(x.multa||0).toFixed(2).replace(".",",");$("status").value=x.status==="cancelado"?"cancelado":"pendente";$("observacoes").value=x.observacoes||"";abrir("modalTitulo")
+}
+$("formTitulo").addEventListener("submit",async e=>{
+  e.preventDefault();
+  if(!$("cliente_id").value){toast("Selecione o cliente.","error");return}
+  const payload={cliente_id:$("cliente_id").value,loja_id:$("loja_id").value||null,documento:$("documento").value.trim()||null,descricao:$("descricao").value.trim(),data_emissao:$("data_emissao").value||hoje(),competencia:$("competencia").value?$("competencia").value+"-01":null,vencimento:$("vencimento").value,valor_original:parseNum($("valor_original").value),desconto:parseNum($("desconto").value),juros:parseNum($("juros").value),multa:parseNum($("multa").value),status:$("status").value,observacoes:$("observacoes").value.trim()||null};
+  if(!payload.descricao||!payload.vencimento||payload.valor_original<=0){toast("Preencha descrição, vencimento e valor.","error");return}
+  const btn=$("btnSalvar");btn.disabled=true;
+  try{await req(editandoId?`${API}?id=${editandoId}`:API,{method:editandoId?"PUT":"POST",body:JSON.stringify(payload)});toast(editandoId?"Título atualizado.":"Título criado.");fechar("modalTitulo");await carregar()}
+  catch(err){toast(err.message,"error")}
+  finally{btn.disabled=false}
+});
+
+function abrirBaixa(id){
+  const x=contas.find(i=>i.id===id);if(!x)return;baixaId=id;
+  $("baixaSub").textContent=`Título #${x.numero} • ${x.cliente_nome||""}`;$("bOriginal").textContent=money.format(Number(x.valor_original||0));$("bRecebido").textContent=money.format(Number(x.valor_recebido||0));$("bSaldo").textContent=money.format(Number(x.saldo||0));$("bVenc").textContent=new Date(x.vencimento+"T12:00:00").toLocaleDateString("pt-BR");$("baixa_valor").value=Number(x.saldo||0).toFixed(2).replace(".",",");$("baixa_data").value=hoje();$("baixa_forma").value="pix";$("baixa_referencia").value="";$("baixa_obs").value="";abrir("modalBaixa")
+}
+$("btnConfirmarBaixa").onclick=async()=>{
+  const valor=parseNum($("baixa_valor").value);if(valor<=0){toast("Informe o valor recebido.","error");return}
+  const btn=$("btnConfirmarBaixa");btn.disabled=true;
+  try{await req(`${API}?id=${baixaId}`,{method:"PATCH",body:JSON.stringify({acao:"receber",valor,data_recebimento:$("baixa_data").value,forma_pagamento:$("baixa_forma").value,referencia:$("baixa_referencia").value.trim()||null,observacao:$("baixa_obs").value.trim()||null})});toast("Recebimento registrado.");fechar("modalBaixa");await carregar()}
+  catch(e){toast(e.message,"error")}finally{btn.disabled=false}
+}
+async function cancelar(id){if(!confirm("Cancelar este título?"))return;try{await req(`${API}?id=${id}`,{method:"PATCH",body:JSON.stringify({acao:"cancelar"})});toast("Título cancelado.");await carregar()}catch(e){toast(e.message,"error")}}
+async function reabrir(id){if(!confirm("Reabrir este título e remover as baixas registradas?"))return;try{await req(`${API}?id=${id}`,{method:"PATCH",body:JSON.stringify({acao:"reabrir"})});toast("Título reaberto.");await carregar()}catch(e){toast(e.message,"error")}}
+async function detalhe(id){
+  try{const d=await req(`${API}?id=${id}`),x=d.item;$("detSub").textContent=`Título #${x.numero}`;
+  $("detBody").innerHTML=`<div class="grid"><div><strong>Cliente</strong><div class="meta">${esc(x.cliente_nome||"-")}</div></div><div><strong>Loja</strong><div class="meta">${esc(x.loja_nome||"-")}</div></div><div><strong>Origem</strong><div class="meta">${x.origem==="pedido"?"Pedido #"+esc(x.pedido_numero||""):"Manual"}</div></div><div><strong>Vencimento</strong><div class="meta">${new Date(x.vencimento+"T12:00:00").toLocaleDateString("pt-BR")}</div></div></div><div class="values"><div class="value-box"><small>Original</small><strong>${money.format(Number(x.valor_original||0))}</strong></div><div class="value-box"><small>Desconto</small><strong>${money.format(Number(x.desconto||0))}</strong></div><div class="value-box"><small>Juros + multa</small><strong>${money.format(Number(x.juros||0)+Number(x.multa||0))}</strong></div><div class="value-box"><small>Saldo</small><strong>${money.format(Number(x.saldo||0))}</strong></div></div><div style="margin-top:12px"><strong>Descrição</strong><div class="meta">${esc(x.descricao||"-")}</div></div>${x.observacoes?`<div style="margin-top:10px"><strong>Observações</strong><div class="meta">${esc(x.observacoes)}</div></div>`:""}<div class="history"><div class="history-title">Histórico de recebimentos</div>${(x.recebimentos||[]).length?(x.recebimentos||[]).map(r=>`<div class="history-row"><div>${new Date(r.data_recebimento+"T12:00:00").toLocaleDateString("pt-BR")}</div><div>${esc(r.forma_pagamento||"-")}${r.referencia?` • ${esc(r.referencia)}`:""}</div><div>${money.format(Number(r.valor||0))}</div><div>${esc(r.usuario_email||"-")}</div></div>`).join(""):'<div style="padding:14px;color:#8a969e;font-size:10px">Nenhum recebimento registrado.</div>'}</div>`;abrir("modalDetalhe")
+  }catch(e){toast(e.message,"error")}
+}
+
+["busca","fStatus","fLoja","fOrigem","fInicio","fFim"].forEach(id=>$(id).addEventListener(id==="busca"?"input":"change",render));
+$("btnAtualizar").onclick=carregar;
+(async()=>{await bases();await carregar()})()
+</script>
+</body>
+</html>
