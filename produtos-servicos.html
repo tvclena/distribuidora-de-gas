@@ -79,7 +79,7 @@
 
     .toolbar{
       display:grid;
-      grid-template-columns:minmax(230px,1.4fr) repeat(3,minmax(150px,.6fr)) auto;
+      grid-template-columns:minmax(230px,1.4fr) repeat(4,minmax(135px,.55fr)) auto;
       gap:9px;
       background:#fff;
       border:1px solid var(--border);
@@ -297,6 +297,52 @@
       line-height:1.45;
     }
 
+
+    .stores-box{
+      grid-column:1/-1;
+      border:1px solid #d9e4ea;
+      border-radius:10px;
+      background:#f8fbfd;
+      padding:12px;
+    }
+    .stores-box-title{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:5px;
+    }
+    .stores-box-title strong{font-size:11px;color:#34454f}
+    .stores-box-title button{
+      border:0;background:transparent;color:var(--active);font-size:10px;font-weight:800;cursor:pointer;
+    }
+    .stores-box-sub{font-size:9px;color:#88959d;line-height:1.45;margin-bottom:10px}
+    .stores-list{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:8px;
+    }
+    .store-check{
+      display:flex;
+      align-items:center;
+      gap:9px;
+      padding:10px;
+      border:1px solid #dce5ea;
+      border-radius:9px;
+      background:#fff;
+      cursor:pointer;
+      min-width:0;
+    }
+    .store-check:hover{border-color:#a9d0e6;background:#fbfdff}
+    .store-check input{width:17px;height:17px;accent-color:var(--active);flex:0 0 auto}
+    .store-check-text{min-width:0}
+    .store-check-text strong{display:block;font-size:10px;color:#3c4c55;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .store-check-text small{display:block;margin-top:2px;font-size:8px;color:#8c989f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .store-chip{
+      display:inline-flex;align-items:center;min-height:22px;padding:0 7px;margin:2px 3px 2px 0;border-radius:999px;
+      font-size:9px;font-weight:800;background:#eef8fe;color:#087fc2;border:1px solid #cfeaf9
+    }
+
     @media(max-width:980px){
       .toolbar{grid-template-columns:1fr 1fr}
       .toolbar .search{grid-column:1/-1}
@@ -318,6 +364,8 @@
       .field.full{grid-column:auto}
       .return-grid{grid-template-columns:1fr}
       .return-box,.return-hint{grid-column:auto}
+      .stores-list{grid-template-columns:1fr}
+      .stores-box{grid-column:auto}
       .modal{padding:8px}
       .modal-card{max-height:calc(100vh - 16px);border-radius:13px}
       .modal-head,.form-body,.modal-foot{padding-left:13px;padding-right:13px}
@@ -362,6 +410,10 @@
         <option value="">Todas as categorias</option>
       </select>
 
+      <select class="control" id="filtroLoja">
+        <option value="">Todas as lojas</option>
+      </select>
+
       <button class="btn btn-secondary" id="btnAtualizar">
         <svg viewBox="0 0 24 24"><path d="M20 6v5h-5"/><path d="M4 18v-5h5"/><path d="M18.5 9A7 7 0 0 0 6 6.5L4 9M5.5 15A7 7 0 0 0 18 17.5l2-2.5"/></svg>
         Atualizar
@@ -404,6 +456,7 @@
               <th>Preço de venda</th>
               <th>Custo</th>
               <th>Estoque</th>
+              <th>Lojas</th>
               <th>Status</th>
               <th style="width:90px">Ações</th>
             </tr>
@@ -501,6 +554,19 @@
             <div class="field produto-only">
               <label>Estoque mínimo</label>
               <input id="estoque_minimo" inputmode="decimal" placeholder="0">
+            </div>
+
+            <div class="stores-box produto-only" id="storesBox">
+              <div class="stores-box-title">
+                <strong>Lojas onde este produto está disponível *</strong>
+                <button type="button" id="btnMarcarTodasLojas">Marcar todas</button>
+              </div>
+              <div class="stores-box-sub">
+                Selecione uma ou mais filiais. O estoque será separado para cada loja.
+              </div>
+              <div class="stores-list" id="lojasLista">
+                <div class="muted">Carregando lojas...</div>
+              </div>
             </div>
 
             <div class="field full">
@@ -603,7 +669,9 @@
 
   <script>
     const API = "/api/produtos-servicos";
+    const API_LOJAS = "/api/lojas";
     let registros = [];
+    let lojas = [];
     let editandoId = null;
 
     const $ = id => document.getElementById(id);
@@ -669,6 +737,41 @@
       }
     }
 
+
+    function lojasSelecionadas(){
+      return [...document.querySelectorAll('.loja-check-input:checked')].map(el=>el.value);
+    }
+
+    function renderLojasCadastro(selecionadas=[]){
+      const set=new Set(selecionadas||[]);
+      if(!lojas.length){
+        $("lojasLista").innerHTML='<div class="muted">Nenhuma loja ativa cadastrada.</div>';
+        return;
+      }
+
+      $("lojasLista").innerHTML=lojas.map(l=>`
+        <label class="store-check">
+          <input
+            type="checkbox"
+            class="loja-check-input"
+            value="${l.id}"
+            ${set.has(l.id) ? "checked" : ""}
+          >
+          <span class="store-check-text">
+            <strong>${escapeHtml(l.nome)}</strong>
+            <small>${escapeHtml([l.cidade,l.estado].filter(Boolean).join(" / ") || l.codigo || "")}${l.principal ? " • Principal" : ""}</small>
+          </span>
+        </label>
+      `).join("");
+    }
+
+    function montarFiltroLojas(){
+      const atual=$("filtroLoja").value;
+      $("filtroLoja").innerHTML='<option value="">Todas as lojas</option>'+
+        lojas.map(l=>`<option value="${l.id}">${escapeHtml(l.nome)}</option>`).join("");
+      if(lojas.some(l=>l.id===atual)) $("filtroLoja").value=atual;
+    }
+
     async function request(url,options={}){
       const r=await fetch(url,{
         credentials:"include",
@@ -692,10 +795,18 @@
       $("empty").classList.remove("show");
 
       try{
-        const data=await request(API);
+        const [data, lojasData]=await Promise.all([
+          request(API),
+          request(API_LOJAS)
+        ]);
+
         registros=Array.isArray(data.items)?data.items:[];
+        lojas=(lojasData.items||[]).filter(x=>x.ativo!==false && !x.deletado);
+
         montarCategorias();
+        montarFiltroLojas();
         montarProdutosRetorno();
+        renderLojasCadastro([]);
         render();
       }catch(e){
         toast(e.message,"error");
@@ -719,6 +830,7 @@
       const tipo=$("filtroTipo").value;
       const status=$("filtroStatus").value;
       const categoria=$("filtroCategoria").value;
+      const loja=$("filtroLoja").value;
 
       return registros.filter(x=>{
         const texto=[x.nome,x.codigo,x.sku,x.categoria,x.descricao].filter(Boolean).join(" ").toLowerCase();
@@ -727,6 +839,7 @@
         if(status==="ativo" && !x.ativo) return false;
         if(status==="inativo" && x.ativo) return false;
         if(categoria && x.categoria!==categoria) return false;
+        if(loja && !(x.lojas_ids||[]).includes(loja)) return false;
         return true;
       });
     }
@@ -776,6 +889,12 @@
             <td class="money">${money.format(Number(x.preco_venda||0))}</td>
             <td>${money.format(Number(x.custo||0))}</td>
             <td>${estoque}</td>
+            <td>${
+              (x.lojas||[]).length
+                ? (x.lojas||[]).slice(0,2).map(l=>`<span class="store-chip">${escapeHtml(l.nome)}</span>`).join("")+
+                  ((x.lojas||[]).length>2 ? `<span class="store-chip">+${(x.lojas||[]).length-2}</span>` : "")
+                : '<span class="muted">Nenhuma</span>'
+            }</td>
             <td><span class="badge ${x.ativo?"badge-active":"badge-inactive"}">${x.ativo?"Ativo":"Inativo"}</span></td>
             <td>
               <div class="actions">
@@ -802,6 +921,7 @@
       $("gera_retorno").checked=false;
       $("produto_retorno_id").value="";
       $("fator_retorno").value="1";
+      renderLojasCadastro(lojas.filter(l=>l.principal).map(l=>l.id));
       montarProdutosRetorno();
       atualizarCamposTipo();
       atualizarRetorno();
@@ -830,6 +950,7 @@
       $("ativo").checked=!!x.ativo;
       $("controla_estoque").checked=!!x.controla_estoque;
       $("gera_retorno").checked=!!x.gera_retorno;
+      renderLojasCadastro(x.lojas_ids||[]);
       montarProdutosRetorno();
       $("produto_retorno_id").value=x.produto_retorno_id||"";
       $("fator_retorno").value=String(Number(x.fator_retorno||1)).replace(".",",");
@@ -893,11 +1014,20 @@
         fator_retorno:
           $("tipo").value==="produto" && $("gera_retorno").checked
             ? parseNumero($("fator_retorno").value||1)
-            : 1
+            : 1,
+        lojas_ids:
+          $("tipo").value==="produto"
+            ? lojasSelecionadas()
+            : []
       };
 
       if(!payload.nome){
         toast("Informe o nome.","error");
+        return;
+      }
+
+      if(payload.tipo==="produto" && !payload.lojas_ids.length){
+        toast("Selecione pelo menos uma loja para este produto.","error");
         return;
       }
 
@@ -956,7 +1086,14 @@
     $("imagem_url").addEventListener("input",atualizarPreview);
     $("btnAtualizar").addEventListener("click",carregar);
 
-    ["busca","filtroTipo","filtroStatus","filtroCategoria"].forEach(id=>{
+    $("btnMarcarTodasLojas").addEventListener("click",()=>{
+      const checks=[...document.querySelectorAll(".loja-check-input")];
+      const todas=checks.length && checks.every(c=>c.checked);
+      checks.forEach(c=>c.checked=!todas);
+      $("btnMarcarTodasLojas").textContent=todas?"Marcar todas":"Desmarcar todas";
+    });
+
+    ["busca","filtroTipo","filtroStatus","filtroCategoria","filtroLoja"].forEach(id=>{
       $(id).addEventListener(id==="busca"?"input":"change",render);
     });
 

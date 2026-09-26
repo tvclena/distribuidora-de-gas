@@ -22,50 +22,40 @@ function normalizeBody(body = {}) {
   const geraRetorno = tipo === "produto" && body.gera_retorno === true;
 
   return {
-    tipo,
-    nome: String(body.nome || "").trim(),
-    categoria: body.categoria ? String(body.categoria).trim() : null,
-    unidade: String(body.unidade || (tipo === "servico" ? "SERV" : "UN")).trim().toUpperCase(),
-    codigo: body.codigo ? String(body.codigo).trim() : null,
-    sku: body.sku ? String(body.sku).trim() : null,
+    produto: {
+      tipo,
+      nome: String(body.nome || "").trim(),
+      categoria: body.categoria ? String(body.categoria).trim() : null,
+      unidade: String(body.unidade || (tipo === "servico" ? "SERV" : "UN")).trim().toUpperCase(),
+      codigo: body.codigo ? String(body.codigo).trim() : null,
+      sku: body.sku ? String(body.sku).trim() : null,
+      preco_venda: Number(body.preco_venda || 0),
+      custo: Number(body.custo || 0),
 
-    preco_venda: Number(body.preco_venda || 0),
-    custo: Number(body.custo || 0),
+      // Mantidos por compatibilidade.
+      // O saldo oficial multi-loja fica em estoque_lojas.
+      estoque_atual: 0,
+      estoque_minimo: Number(body.estoque_minimo || 0),
 
-    estoque_atual: tipo === "produto"
-      ? Number(body.estoque_atual || 0)
-      : 0,
+      imagem_url: body.imagem_url ? String(body.imagem_url).trim() : null,
+      descricao: body.descricao ? String(body.descricao).trim() : null,
+      ativo: body.ativo !== false,
+      controla_estoque: tipo === "produto" ? body.controla_estoque !== false : false,
+      gera_retorno: geraRetorno,
+      produto_retorno_id:
+        geraRetorno && body.produto_retorno_id
+          ? String(body.produto_retorno_id)
+          : null,
+      fator_retorno:
+        geraRetorno
+          ? Number(body.fator_retorno || 1)
+          : 1
+    },
 
-    estoque_minimo: tipo === "produto"
-      ? Number(body.estoque_minimo || 0)
-      : 0,
-
-    imagem_url: body.imagem_url
-      ? String(body.imagem_url).trim()
-      : null,
-
-    descricao: body.descricao
-      ? String(body.descricao).trim()
-      : null,
-
-    ativo: body.ativo !== false,
-
-    controla_estoque:
-      tipo === "produto"
-        ? body.controla_estoque !== false
-        : false,
-
-    gera_retorno: geraRetorno,
-
-    produto_retorno_id:
-      geraRetorno && body.produto_retorno_id
-        ? String(body.produto_retorno_id)
-        : null,
-
-    fator_retorno:
-      geraRetorno
-        ? Number(body.fator_retorno || 1)
-        : 1
+    lojas_ids:
+      tipo === "produto" && Array.isArray(body.lojas_ids)
+        ? [...new Set(body.lojas_ids.map(String).filter(Boolean))]
+        : []
   };
 }
 
@@ -99,6 +89,66 @@ async function validarRetorno(supabase, payload, idAtual = null) {
   }
 }
 
+async function validarLojas(supabase, tipo, lojasIds) {
+  if (tipo !== "produto") return;
+
+  if (!lojasIds.length) {
+    throw new Error("Selecione pelo menos uma loja para o produto.");
+  }
+
+  const { data, error } = await supabase
+    .from("lojas")
+    .select("id,nome,ativo,deletado")
+    .in("id", lojasIds);
+
+  if (error) throw error;
+
+  const validas = (data || []).filter(x => x.ativo && !x.deletado);
+
+  if (validas.length !== lojasIds.length) {
+    throw new Error("Uma ou mais lojas selecionadas são inválidas ou estão inativas.");
+  }
+}
+
+async function sincronizarLojasProduto(supabase, produtoId, lojasIds, estoqueMinimo = 0) {
+  const { error: deleteError } = await supabase
+    .from("produto_lojas")
+    .delete()
+    .eq("produto_id", produtoId);
+
+  if (deleteError) throw deleteError;
+
+  if (!lojasIds.length) return;
+
+  const vinculos = lojasIds.map(lojaId => ({
+    produto_id: produtoId,
+    loja_id: lojaId,
+    ativo: true
+  }));
+
+  const { error: vinculoError } = await supabase
+    .from("produto_lojas")
+    .insert(vinculos);
+
+  if (vinculoError) throw vinculoError;
+
+  // Garante linha de estoque da loja, mas NÃO cria entrada/movimentação.
+  for (const lojaId of lojasIds) {
+    const { error } = await supabase
+      .from("estoque_lojas")
+      .upsert({
+        loja_id: lojaId,
+        produto_id: produtoId,
+        estoque_minimo: Number(estoqueMinimo || 0)
+      }, {
+        onConflict: "loja_id,produto_id",
+        ignoreDuplicates: false
+      });
+
+    if (error) throw error;
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
 
@@ -109,7 +159,7 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === "GET") {
-      const { data, error } = await supabase
+      const { data: produtos, error } = await supabase
         .from("produtos_servicos")
         .select("*")
         .eq("deletado", false)
@@ -117,22 +167,63 @@ export default async function handler(req, res) {
 
       if (error) throw error;
 
+      const ids = (produtos || []).map(x => x.id);
+
+      let vinculos = [];
+      let saldos = [];
+
+      if (ids.length) {
+        const { data: v, error: vError } = await supabase
+          .from("produto_lojas")
+          .select("produto_id,loja_id,ativo,lojas:loja_id(id,nome,codigo,cidade,estado,principal)")
+          .in("produto_id", ids)
+          .eq("ativo", true);
+
+        if (vError) throw vError;
+        vinculos = v || [];
+
+        const { data: e, error: eError } = await supabase
+          .from("estoque_lojas")
+          .select("produto_id,loja_id,estoque_atual,estoque_minimo")
+          .in("produto_id", ids);
+
+        if (eError) throw eError;
+        saldos = e || [];
+      }
+
+      const items = (produtos || []).map(p => {
+        const v = vinculos.filter(x => x.produto_id === p.id);
+        const e = saldos.filter(x => x.produto_id === p.id);
+        const total = e.reduce((s, x) => s + Number(x.estoque_atual || 0), 0);
+
+        return {
+          ...p,
+          estoque_atual: total,
+          lojas_ids: v.map(x => x.loja_id),
+          lojas: v.map(x => ({
+            ...(x.lojas || {}),
+            estoque_atual: Number(e.find(s => s.loja_id === x.loja_id)?.estoque_atual || 0),
+            estoque_minimo: Number(e.find(s => s.loja_id === x.loja_id)?.estoque_minimo || 0)
+          }))
+        };
+      });
+
       return res.status(200).json({
         ok: true,
-        items: data || []
+        items
       });
     }
 
     if (req.method === "POST") {
-      const payload = normalizeBody(req.body);
+      const body = normalizeBody(req.body);
+      const payload = body.produto;
 
       if (!payload.nome) {
-        return res.status(400).json({
-          error: "Informe o nome."
-        });
+        return res.status(400).json({ error: "Informe o nome." });
       }
 
       await validarRetorno(supabase, payload);
+      await validarLojas(supabase, payload.tipo, body.lojas_ids);
 
       payload.criado_por = auth.user.id;
       payload.criado_por_email = auth.user.email;
@@ -145,6 +236,13 @@ export default async function handler(req, res) {
 
       if (error) throw error;
 
+      await sincronizarLojasProduto(
+        supabase,
+        data.id,
+        body.lojas_ids,
+        payload.estoque_minimo
+      );
+
       return res.status(201).json({
         ok: true,
         item: data
@@ -155,20 +253,18 @@ export default async function handler(req, res) {
       const id = String(req.query?.id || "").trim();
 
       if (!id) {
-        return res.status(400).json({
-          error: "ID não informado."
-        });
+        return res.status(400).json({ error: "ID não informado." });
       }
 
-      const payload = normalizeBody(req.body);
+      const body = normalizeBody(req.body);
+      const payload = body.produto;
 
       if (!payload.nome) {
-        return res.status(400).json({
-          error: "Informe o nome."
-        });
+        return res.status(400).json({ error: "Informe o nome." });
       }
 
       await validarRetorno(supabase, payload, id);
+      await validarLojas(supabase, payload.tipo, body.lojas_ids);
 
       payload.atualizado_em = new Date().toISOString();
       payload.atualizado_por = auth.user.id;
@@ -184,6 +280,13 @@ export default async function handler(req, res) {
 
       if (error) throw error;
 
+      await sincronizarLojasProduto(
+        supabase,
+        id,
+        body.lojas_ids,
+        payload.estoque_minimo
+      );
+
       return res.status(200).json({
         ok: true,
         item: data
@@ -194,9 +297,7 @@ export default async function handler(req, res) {
       const id = String(req.query?.id || "").trim();
 
       if (!id) {
-        return res.status(400).json({
-          error: "ID não informado."
-        });
+        return res.status(400).json({ error: "ID não informado." });
       }
 
       const { data: vinculos, error: vinculoError } = await supabase
@@ -210,7 +311,6 @@ export default async function handler(req, res) {
 
       if ((vinculos || []).length) {
         const nomes = vinculos.slice(0, 3).map(x => x.nome).join(", ");
-
         return res.status(409).json({
           error:
             `Este produto está configurado como retorno de: ${nomes}. ` +
@@ -232,14 +332,16 @@ export default async function handler(req, res) {
 
       if (error) throw error;
 
+      await supabase
+        .from("produto_lojas")
+        .update({ ativo: false })
+        .eq("produto_id", id);
+
       return res.status(200).json({ ok: true });
     }
 
     res.setHeader("Allow", "GET, POST, PATCH, DELETE");
-
-    return res.status(405).json({
-      error: "Método não permitido."
-    });
+    return res.status(405).json({ error: "Método não permitido." });
 
   } catch (error) {
     console.error("PRODUTOS_SERVICOS_ERROR", error);
