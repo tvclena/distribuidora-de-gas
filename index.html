@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#14689b" />
+  <title>Painel da Distribuidora</title>
+
+  <style>
+    :root{
+      --topbar:#166f9f;
+      --topbar-dark:#0e5d8a;
+      --sidebar:#ffffff;
+      --bg:#e9edf1;
+      --panel:#ffffff;
+      --border:#d8dee4;
+      --text:#263238;
+      --muted:#6f7a83;
+      --active:#087fc2;
+      --active-soft:#eef8fe;
+      --hover:#f5f8fa;
+      --shadow:0 2px 10px rgba(24,48,66,.09);
+      --sidebar-w:230px;
+      --topbar-h:58px;
+    }
+
+    *{
+      box-sizing:border-box;
+      margin:0;
+      padding:0;
+    }
+
+    html,body{
+      width:100%;
+      height:100%;
+      font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      overflow:hidden;
+    }
+
+    button,input{
+      font:inherit;
+    }
+
+    button{
+      border:0;
+      background:none;
+      color:inherit;
+    }
+
+    .app{
+      width:100%;
+      height:100%;
+      display:grid;
+      grid-template-columns:var(--sidebar-w) 1fr;
+      grid-template-rows:var(--topbar-h) 1fr;
+      grid-template-areas:
+        "brand topbar"
+        "sidebar content";
+    }
+
+    /* BRAND */
+    .brand{
+      grid-area:brand;
+      height:var(--topbar-h);
+      background:var(--topbar-dark);
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:0 16px;
+      color:#fff;
+      border-right:1px solid rgba(255,255,255,.1);
+      user-select:none;
+    }
+
+    .brand-mark{
+      width:34px;
+      height:34px;
+      border-radius:9px;
+      display:grid;
+      place-items:center;
+      background:rgba(255,255,255,.16);
+      font-weight:900;
+      letter-spacing:-1px;
+      border:1px solid rgba(255,255,255,.20);
+    }
+
+    .brand-text{
+      min-width:0;
+    }
+
+    .brand-title{
+      font-size:14px;
+      font-weight:800;
+      line-height:1.05;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .brand-subtitle{
+      margin-top:3px;
+      font-size:10px;
+      color:rgba(255,255,255,.74);
+      letter-spacing:.05em;
+      text-transform:uppercase;
+    }
+
+    /* TOPBAR */
+    .topbar{
+      grid-area:topbar;
+      height:var(--topbar-h);
+      background:var(--topbar);
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 16px 0 12px;
+      box-shadow:0 1px 0 rgba(0,0,0,.08);
+      z-index:20;
+    }
+
+    .top-left,
+    .top-right{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+
+    .icon-btn{
+      width:38px;
+      height:38px;
+      display:grid;
+      place-items:center;
+      color:#fff;
+      cursor:pointer;
+      border-radius:8px;
+      transition:.18s ease;
+    }
+
+    .icon-btn:hover{
+      background:rgba(255,255,255,.12);
+    }
+
+    .page-title{
+      font-size:15px;
+      font-weight:600;
+      color:rgba(255,255,255,.94);
+    }
+
+    .user-pill{
+      display:flex;
+      align-items:center;
+      gap:9px;
+      min-width:0;
+      height:38px;
+      padding:0 10px;
+      border-radius:9px;
+      cursor:pointer;
+      transition:.18s ease;
+    }
+
+    .user-pill:hover{
+      background:rgba(255,255,255,.10);
+    }
+
+    .avatar{
+      width:28px;
+      height:28px;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      background:rgba(255,255,255,.18);
+      border:1px solid rgba(255,255,255,.28);
+      font-size:12px;
+      font-weight:800;
+      flex:0 0 auto;
+    }
+
+    .user-name{
+      max-width:180px;
+      overflow:hidden;
+      white-space:nowrap;
+      text-overflow:ellipsis;
+      font-size:13px;
+      font-weight:650;
+    }
+
+    /* SIDEBAR */
+    .sidebar{
+      grid-area:sidebar;
+      position:relative;
+      background:var(--sidebar);
+      border-right:1px solid var(--border);
+      overflow-y:auto;
+      overflow-x:hidden;
+      padding:12px 9px 18px;
+      z-index:30;
+    }
+
+    .nav-section{
+      margin-bottom:17px;
+    }
+
+    .nav-heading{
+      padding:0 11px 7px;
+      font-size:10px;
+      line-height:1;
+      font-weight:800;
+      color:#9aa4ac;
+      text-transform:uppercase;
+      letter-spacing:.085em;
+    }
+
+    .nav-item{
+      width:100%;
+      min-height:42px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:8px 11px;
+      margin:2px 0;
+      border-radius:8px;
+      color:#39454d;
+      text-decoration:none;
+      cursor:pointer;
+      transition:.15s ease;
+      position:relative;
+      text-align:left;
+    }
+
+    .nav-item:hover{
+      background:var(--hover);
+    }
+
+    .nav-item.active{
+      color:var(--active);
+      background:var(--active-soft);
+      font-weight:700;
+    }
+
+    .nav-item.active::before{
+      content:"";
+      position:absolute;
+      left:-9px;
+      width:3px;
+      height:24px;
+      border-radius:0 4px 4px 0;
+      background:var(--active);
+    }
+
+    .nav-icon{
+      width:21px;
+      height:21px;
+      display:grid;
+      place-items:center;
+      flex:0 0 21px;
+      color:currentColor;
+    }
+
+    .nav-icon svg{
+      width:19px;
+      height:19px;
+      stroke:currentColor;
+      stroke-width:1.8;
+      fill:none;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+    }
+
+    .nav-label{
+      font-size:13px;
+      line-height:1.25;
+      min-width:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .nav-spacer{
+      height:5px;
+    }
+
+    /* CONTENT */
+    .content{
+      grid-area:content;
+      min-width:0;
+      min-height:0;
+      background:var(--bg);
+      padding:10px;
+      overflow:hidden;
+      position:relative;
+    }
+
+    .workspace{
+      width:100%;
+      height:100%;
+      background:#fff;
+      border:1px solid #cfd8df;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      position:relative;
+    }
+
+    .page-frame{
+      width:100%;
+      height:100%;
+      border:0;
+      background:#fff;
+      display:block;
+    }
+
+    .home-placeholder{
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px;
+      background:
+        linear-gradient(rgba(255,255,255,.92),rgba(255,255,255,.92)),
+        radial-gradient(circle at 20% 20%, #dceef9 0, transparent 30%),
+        radial-gradient(circle at 80% 30%, #e7f4fb 0, transparent 28%);
+    }
+
+    .home-card{
+      width:min(560px,100%);
+      text-align:center;
+      padding:34px 28px;
+    }
+
+    .home-card h1{
+      font-size:25px;
+      margin-bottom:8px;
+      color:#24323b;
+    }
+
+    .home-card p{
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.6;
+    }
+
+    .loading{
+      position:absolute;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:rgba(255,255,255,.78);
+      backdrop-filter:blur(2px);
+      z-index:15;
+    }
+
+    .loading.show{
+      display:flex;
+    }
+
+    .spinner{
+      width:34px;
+      height:34px;
+      border:3px solid #d8e6ee;
+      border-top-color:var(--active);
+      border-radius:50%;
+      animation:spin .8s linear infinite;
+    }
+
+    @keyframes spin{
+      to{transform:rotate(360deg)}
+    }
+
+    .mobile-overlay{
+      display:none;
+    }
+
+    /* MOBILE */
+    @media (max-width: 850px){
+      :root{
+        --sidebar-w:260px;
+      }
+
+      .app{
+        grid-template-columns:1fr;
+        grid-template-rows:var(--topbar-h) 1fr;
+        grid-template-areas:
+          "topbar"
+          "content";
+      }
+
+      .brand{
+        display:none;
+      }
+
+      .sidebar{
+        position:fixed;
+        top:0;
+        left:0;
+        width:var(--sidebar-w);
+        height:100%;
+        padding-top:16px;
+        transform:translateX(-102%);
+        transition:transform .22s ease;
+        box-shadow:8px 0 28px rgba(0,0,0,.14);
+      }
+
+      body.menu-open .sidebar{
+        transform:translateX(0);
+      }
+
+      .mobile-overlay{
+        position:fixed;
+        inset:0;
+        background:rgba(10,24,33,.30);
+        z-index:25;
+      }
+
+      body.menu-open .mobile-overlay{
+        display:block;
+      }
+
+      .content{
+        padding:7px;
+      }
+
+      .page-title{
+        display:none;
+      }
+
+      .user-name{
+        max-width:120px;
+      }
+    }
+
+    @media (min-width:851px){
+      #btnMenu{
+        display:none;
+      }
+    }
+
+    @media (max-width:480px){
+      .topbar{
+        padding:0 8px;
+      }
+
+      .user-name{
+        max-width:100px;
+      }
+
+      .workspace{
+        border-radius:0;
+      }
+
+      .content{
+        padding:0;
+      }
+    }
+  
+    /* =========================================================
+       AUTENTICAÇÃO
+       ========================================================= */
+    .auth-screen{
+      position:fixed;
+      inset:0;
+      z-index:9999;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:22px;
+      background:
+        radial-gradient(circle at 15% 15%, rgba(20,104,155,.18), transparent 34%),
+        radial-gradient(circle at 85% 80%, rgba(8,127,194,.14), transparent 30%),
+        linear-gradient(145deg,#eef5f9 0%,#f8fbfd 52%,#eaf1f5 100%);
+    }
+
+    .auth-screen.show{ display:flex; }
+
+    .auth-card{
+      width:min(430px,100%);
+      background:rgba(255,255,255,.96);
+      border:1px solid rgba(20,104,155,.14);
+      border-radius:20px;
+      box-shadow:0 24px 70px rgba(23,56,78,.18);
+      padding:30px;
+    }
+
+    .auth-brand{
+      display:flex;
+      align-items:center;
+      gap:13px;
+      margin-bottom:26px;
+    }
+
+    .auth-brand-mark{
+      width:46px;
+      height:46px;
+      border-radius:13px;
+      display:grid;
+      place-items:center;
+      color:#fff;
+      font-size:19px;
+      font-weight:900;
+      background:linear-gradient(145deg,var(--topbar-dark),var(--active));
+      box-shadow:0 8px 22px rgba(8,127,194,.22);
+    }
+
+    .auth-brand-title{
+      font-size:18px;
+      line-height:1.1;
+      font-weight:850;
+      color:#20323e;
+    }
+
+    .auth-brand-subtitle{
+      margin-top:4px;
+      color:#7a8790;
+      font-size:12px;
+    }
+
+    .auth-card h2{
+      font-size:23px;
+      color:#20313c;
+      margin-bottom:7px;
+    }
+
+    .auth-card > p{
+      color:#71808a;
+      font-size:13px;
+      line-height:1.5;
+      margin-bottom:22px;
+    }
+
+    .auth-field{ margin-bottom:14px; }
+
+    .auth-field label{
+      display:block;
+      margin:0 0 7px 2px;
+      color:#475760;
+      font-size:12px;
+      font-weight:750;
+    }
+
+    .auth-input-wrap{
+      height:48px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:0 13px;
+      border:1px solid #d7e0e6;
+      border-radius:11px;
+      background:#fff;
+      transition:.18s ease;
+    }
+
+    .auth-input-wrap:focus-within{
+      border-color:#4ba2cf;
+      box-shadow:0 0 0 3px rgba(8,127,194,.09);
+    }
+
+    .auth-input-wrap svg{
+      width:18px;
+      height:18px;
+      stroke:#84939d;
+      flex:0 0 auto;
+    }
+
+    .auth-input{
+      width:100%;
+      height:100%;
+      border:0;
+      outline:0;
+      background:transparent;
+      color:#263238;
+      font-size:14px;
+    }
+
+    .auth-password-toggle{
+      width:32px;
+      height:32px;
+      display:grid;
+      place-items:center;
+      border-radius:8px;
+      cursor:pointer;
+      color:#7e8d97;
+      flex:0 0 auto;
+    }
+
+    .auth-password-toggle:hover{ background:#f0f5f8; }
+
+    .auth-submit{
+      width:100%;
+      height:48px;
+      margin-top:5px;
+      border-radius:11px;
+      background:linear-gradient(135deg,var(--topbar-dark),var(--active));
+      color:#fff;
+      font-weight:800;
+      font-size:14px;
+      cursor:pointer;
+      box-shadow:0 9px 24px rgba(8,127,194,.18);
+      transition:.18s ease;
+    }
+
+    .auth-submit:hover{ transform:translateY(-1px); }
+    .auth-submit:disabled{ opacity:.65; cursor:not-allowed; transform:none; }
+
+    .auth-error{
+      display:none;
+      margin:13px 0 0;
+      padding:11px 12px;
+      border-radius:9px;
+      background:#fff0f0;
+      border:1px solid #ffd3d3;
+      color:#a33333;
+      font-size:12px;
+      line-height:1.4;
+    }
+
+    .auth-error.show{ display:block; }
+
+    .auth-loading{
+      position:fixed;
+      inset:0;
+      z-index:10000;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#eef3f6;
+    }
+
+    .auth-loading.hidden{ display:none; }
+
+    .user-menu-dropdown{
+      position:absolute;
+      top:52px;
+      right:14px;
+      min-width:190px;
+      display:none;
+      padding:7px;
+      background:#fff;
+      border:1px solid #dce3e8;
+      border-radius:11px;
+      box-shadow:0 16px 35px rgba(15,40,58,.16);
+      z-index:100;
+    }
+
+    .user-menu-dropdown.show{ display:block; }
+
+    .user-menu-info{
+      padding:9px 10px 10px;
+      border-bottom:1px solid #eef2f4;
+      margin-bottom:5px;
+    }
+
+    .user-menu-info strong{
+      display:block;
+      color:#2a3943;
+      font-size:13px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .user-menu-info small{
+      display:block;
+      color:#84919a;
+      font-size:10px;
+      margin-top:3px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .user-menu-action{
+      width:100%;
+      display:flex;
+      align-items:center;
+      gap:9px;
+      padding:10px;
+      border-radius:8px;
+      cursor:pointer;
+      color:#3e4b53;
+      font-size:12px;
+      font-weight:650;
+      text-align:left;
+    }
+
+    .user-menu-action:hover{ background:#f4f7f9; }
+    .user-menu-action.danger{ color:#a03939; }
+
+</style>
+</head>
+<body>
+
+<div class="auth-loading" id="authLoading">
+  <div class="spinner"></div>
+</div>
+
+<section class="auth-screen" id="authScreen" aria-hidden="true">
+  <form class="auth-card" id="loginForm" autocomplete="on">
+    <div class="auth-brand">
+      <div class="auth-brand-mark">D</div>
+      <div>
+        <div class="auth-brand-title">DISTRIBUIDORA</div>
+        <div class="auth-brand-subtitle">Acesso ao painel</div>
+      </div>
+    </div>
+
+    <h2>Entrar</h2>
+    <p>Informe seu e-mail e senha para acessar o sistema.</p>
+
+    <div class="auth-field">
+      <label for="loginEmail">E-mail</label>
+      <div class="auth-input-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+          <path d="M4 4h16v16H4z"/>
+          <path d="m4 6 8 6 8-6"/>
+        </svg>
+        <input class="auth-input" id="loginEmail" name="email" type="email"
+               placeholder="seuemail@empresa.com" autocomplete="email" required>
+      </div>
+    </div>
+
+    <div class="auth-field">
+      <label for="loginPassword">Senha</label>
+      <div class="auth-input-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+          <rect x="5" y="10" width="14" height="10" rx="2"/>
+          <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+        </svg>
+        <input class="auth-input" id="loginPassword" name="password" type="password"
+               placeholder="Digite sua senha" autocomplete="current-password" required>
+        <button class="auth-password-toggle" id="togglePassword" type="button" aria-label="Mostrar senha">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/>
+            <circle cx="12" cy="12" r="2.5"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <button class="auth-submit" id="loginButton" type="submit">Entrar no sistema</button>
+    <div class="auth-error" id="loginError"></div>
+  </form>
+</section>
+
+
+<div class="app">
+
+  <header class="brand">
+    <div class="brand-mark">D</div>
+    <div class="brand-text">
+      <div class="brand-title">DISTRIBUIDORA</div>
+      <div class="brand-subtitle">Gestão integrada</div>
+    </div>
+  </header>
+
+  <header class="topbar">
+    <div class="top-left">
+      <button class="icon-btn" id="btnMenu" aria-label="Abrir menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+
+      <div class="page-title" id="pageTitle">Visão Geral</div>
+    </div>
+
+    <div class="top-right">
+      <div class="user-pill" id="userMenu">
+        <div class="avatar" id="userAvatar">U</div>
+        <div class="user-name" id="userName">Usuário</div>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="m6 9 6 6 6-6"/>
+        </svg>
+      </div>
+
+      <div class="user-menu-dropdown" id="userDropdown">
+        <div class="user-menu-info">
+          <strong id="userDropdownName">Usuário</strong>
+          <small id="userDropdownEmail"></small>
+        </div>
+        <button class="user-menu-action danger" id="btnLogout" type="button">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10 17l5-5-5-5"/>
+            <path d="M15 12H3"/>
+            <path d="M14 4h6v16h-6"/>
+          </svg>
+          Sair do sistema
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <aside class="sidebar" id="sidebar">
+
+    <div class="nav-section">
+      <div class="nav-heading">Gestão</div>
+
+      <a class="nav-item active" href="#" data-page="inicio" data-title="Visão Geral">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M3 11 12 4l9 7"/>
+            <path d="M5 10v10h14V10"/>
+            <path d="M9 20v-6h6v6"/>
+          </svg>
+        </span>
+        <span class="nav-label">Visão Geral</span>
+      </a>
+
+      <a class="nav-item" href="#" data-page="lojas" data-title="Minhas Lojas">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 10V4h16v6"/>
+            <path d="M3 10h18l-1 4a3 3 0 0 1-3 2 3 3 0 0 1-3-2 3 3 0 0 1-3 2 3 3 0 0 1-3-2 3 3 0 0 1-3 2 3 3 0 0 1-3-2l1-4Z"/>
+            <path d="M5 16v4h14v-4"/>
+          </svg>
+        </span>
+        <span class="nav-label">Minhas Lojas</span>
+      </a>
+
+      <a class="nav-item" href="#" data-page="pedidos" data-title="Pedidos">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M6 3h12v18H6z"/>
+            <path d="M9 7h6M9 11h6M9 15h4"/>
+          </svg>
+        </span>
+        <span class="nav-label">Pedidos</span>
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-heading">Cadastros</div>
+
+      <a class="nav-item" href="#" data-page="clientes-fornecedores" data-title="Clientes e Fornecedores">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24">
+            <circle cx="9" cy="8" r="3"/>
+            <path d="M3 20c0-4 2-7 6-7s6 3 6 7"/>
+            <path d="M16 7h5M18.5 4.5v5"/>
+          </svg>
+        </span>
+        <span class="nav-label">Clientes e Fornecedores</span>
+      </a>
+
+      <a class="nav-item" href="#" data-page="produtos-servicos" data-title="Produtos e Serviços">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="m4 7 8-4 8 4-8 4-8-4Z"/>
+            <path d="m4 7 8 4 8-4"/>
+            <path d="M4 7v10l8 4 8-4V7"/>
+            <path d="M12 11v10"/>
+          </svg>
+        </span>
+        <span class="nav-label">Produtos e Serviços</span>
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-heading">Estoque</div>
+
+      <a class="nav-item" href="#" data-page="entrada-estoque" data-title="Entrada de Estoque">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 5h16v14H4z"/>
+            <path d="M8 9h8"/>
+            <path d="m12 6 4 3-4 3"/>
+          </svg>
+        </span>
+        <span class="nav-label">Entrada de Estoque</span>
+      </a>
+
+      <a class="nav-item" href="#" data-page="movimentacao-estoque" data-title="Movimentação de Estoque">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M7 7h11l-3-3"/>
+            <path d="m18 7-3 3"/>
+            <path d="M17 17H6l3 3"/>
+            <path d="m6 17 3-3"/>
+          </svg>
+        </span>
+        <span class="nav-label">Movimentação de Estoque</span>
+      </a>
+
+      <a class="nav-item" href="#" data-page="ajuste-estoque" data-title="Ajuste de Estoque">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 6h10M4 12h16M4 18h8"/>
+            <circle cx="17" cy="6" r="2"/>
+            <circle cx="15" cy="18" r="2"/>
+          </svg>
+        </span>
+        <span class="nav-label">Ajuste de Estoque</span>
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-heading">Financeiro</div>
+
+      <a class="nav-item" href="#" data-page="contas-receber" data-title="Contas a Receber">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 5h16v14H4z"/>
+            <path d="M7 9h10M7 13h5"/>
+            <path d="M16 16h1"/>
+          </svg>
+        </span>
+        <span class="nav-label">Contas a Receber</span>
+      </a>
+
+      <a class="nav-item" href="#" data-page="meios-pagamento" data-title="Meios de Pagamento">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24">
+            <rect x="3" y="5" width="18" height="14" rx="2"/>
+            <path d="M3 10h18"/>
+            <path d="M7 15h4"/>
+          </svg>
+        </span>
+        <span class="nav-label">Meios de Pagamento</span>
+      </a>
+    </div>
+
+  </aside>
+
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+
+  <main class="content">
+    <section class="workspace">
+
+      <div class="home-placeholder" id="homePlaceholder">
+        <div class="home-card">
+          <h1>Painel da Distribuidora</h1>
+          <p>
+            Esta é apenas a estrutura principal. Cada módulo será criado em um arquivo separado
+            e aberto dentro desta área, mantendo a navegação fixa.
+          </p>
+        </div>
+      </div>
+
+      <iframe
+        id="pageFrame"
+        class="page-frame"
+        title="Conteúdo do sistema"
+        style="display:none"
+      ></iframe>
+
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+      </div>
+
+    </section>
+  </main>
+
+</div>
+
+<script>
+  /*
+    =========================================================
+    CAMINHOS DOS MÓDULOS
+    =========================================================
+    Troque somente os caminhos abaixo conforme for criando
+    cada página do sistema.
+
+    Exemplo:
+    lojas: "./lojas/index.html"
+  */
+  const ROTAS = {
+    "lojas": "./lojas/index.html",
+    "pedidos": "./pedidos/index.html",
+    "clientes-fornecedores": "./cadastros/clientes-fornecedores.html",
+    "produtos-servicos": "./cadastros/produtos-servicos.html",
+    "entrada-estoque": "./estoque/entrada.html",
+    "movimentacao-estoque": "./estoque/movimentacoes.html",
+    "ajuste-estoque": "./estoque/ajustes.html",
+    "contas-receber": "./financeiro/contas-receber.html",
+    "meios-pagamento": "./financeiro/meios-pagamento.html"
+  };
+
+
+  /*
+    =========================================================
+    AUTENTICAÇÃO
+    =========================================================
+    A dashboard só é liberada quando /api/auth/me confirmar
+    uma sessão válida. Os tokens ficam em cookies HttpOnly.
+  */
+  let usuarioAtual = null;
+
+  function definirUsuario(nome, email = "") {
+    const nomeLimpo = (nome || "Usuário").trim();
+    document.getElementById("userName").textContent = nomeLimpo;
+    document.getElementById("userAvatar").textContent =
+      nomeLimpo.charAt(0).toUpperCase() || "U";
+    document.getElementById("userDropdownName").textContent = nomeLimpo;
+    document.getElementById("userDropdownEmail").textContent = email || "";
+  }
+
+  function nomeExibicao(user) {
+    const meta = user?.user_metadata || {};
+    const nome =
+      meta.nome ||
+      meta.name ||
+      meta.full_name ||
+      meta.display_name ||
+      user?.email?.split("@")[0] ||
+      "Usuário";
+
+    return String(nome).trim();
+  }
+
+  function mostrarLogin(mensagem = "") {
+    document.getElementById("authLoading").classList.add("hidden");
+    const tela = document.getElementById("authScreen");
+    tela.classList.add("show");
+    tela.setAttribute("aria-hidden", "false");
+
+    if (mensagem) {
+      const erro = document.getElementById("loginError");
+      erro.textContent = mensagem;
+      erro.classList.add("show");
+    }
+
+    setTimeout(() => document.getElementById("loginEmail")?.focus(), 50);
+  }
+
+  function esconderLogin() {
+    document.getElementById("authLoading").classList.add("hidden");
+    const tela = document.getElementById("authScreen");
+    tela.classList.remove("show");
+    tela.setAttribute("aria-hidden", "true");
+    document.getElementById("loginError").classList.remove("show");
+  }
+
+  async function apiJson(url, options = {}) {
+    const resposta = await fetch(url, {
+      credentials: "include",
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+      },
+      ...options
+    });
+
+    let dados = {};
+    try { dados = await resposta.json(); } catch {}
+
+    return { resposta, dados };
+  }
+
+  async function carregarSessao() {
+    try {
+      let { resposta, dados } = await apiJson("/api/auth/me");
+
+      if (resposta.status === 401) {
+        const refresh = await apiJson("/api/auth/refresh", { method: "POST" });
+
+        if (refresh.resposta.ok) {
+          ({ resposta, dados } = await apiJson("/api/auth/me"));
+        }
+      }
+
+      if (!resposta.ok || !dados?.user) {
+        usuarioAtual = null;
+        mostrarLogin();
+        return false;
+      }
+
+      usuarioAtual = dados.user;
+      definirUsuario(nomeExibicao(usuarioAtual), usuarioAtual.email || "");
+      esconderLogin();
+      return true;
+    } catch (erro) {
+      console.error("Erro ao validar sessão:", erro);
+      usuarioAtual = null;
+      mostrarLogin("Não foi possível validar sua sessão. Tente novamente.");
+      return false;
+    }
+  }
+
+  async function fazerLogin(event) {
+    event.preventDefault();
+
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+    const botao = document.getElementById("loginButton");
+    const erro = document.getElementById("loginError");
+
+    erro.classList.remove("show");
+    botao.disabled = true;
+    botao.textContent = "Entrando...";
+
+    try {
+      const { resposta, dados } = await apiJson("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password })
+      });
+
+      if (!resposta.ok) {
+        throw new Error(dados?.error || "E-mail ou senha inválidos.");
+      }
+
+      usuarioAtual = dados.user;
+      definirUsuario(nomeExibicao(usuarioAtual), usuarioAtual?.email || "");
+      esconderLogin();
+      document.getElementById("loginForm").reset();
+    } catch (err) {
+      erro.textContent = err.message || "Não foi possível entrar.";
+      erro.classList.add("show");
+    } finally {
+      botao.disabled = false;
+      botao.textContent = "Entrar no sistema";
+    }
+  }
+
+  async function sair() {
+    const botao = document.getElementById("btnLogout");
+    botao.disabled = true;
+
+    try {
+      await apiJson("/api/auth/logout", { method: "POST" });
+    } catch (erro) {
+      console.warn("Falha ao encerrar sessão no servidor:", erro);
+    } finally {
+      usuarioAtual = null;
+      document.getElementById("userDropdown").classList.remove("show");
+      mostrarLogin();
+      document.getElementById("loginPassword").value = "";
+      botao.disabled = false;
+    }
+  }
+
+  document.getElementById("loginForm").addEventListener("submit", fazerLogin);
+
+  document.getElementById("togglePassword").addEventListener("click", () => {
+    const campo = document.getElementById("loginPassword");
+    campo.type = campo.type === "password" ? "text" : "password";
+  });
+
+  document.getElementById("userMenu").addEventListener("click", (event) => {
+    event.stopPropagation();
+    document.getElementById("userDropdown").classList.toggle("show");
+  });
+
+  document.getElementById("btnLogout").addEventListener("click", sair);
+
+  document.addEventListener("click", (event) => {
+    const dropdown = document.getElementById("userDropdown");
+    const userMenu = document.getElementById("userMenu");
+
+    if (!dropdown.contains(event.target) && !userMenu.contains(event.target)) {
+      dropdown.classList.remove("show");
+    }
+  });
+
+  carregarSessao();
+
+  const body = document.body;
+  const pageFrame = document.getElementById("pageFrame");
+  const homePlaceholder = document.getElementById("homePlaceholder");
+  const loading = document.getElementById("loading");
+  const pageTitle = document.getElementById("pageTitle");
+
+  function fecharMenuMobile() {
+    body.classList.remove("menu-open");
+  }
+
+  function ativarItem(item) {
+    document.querySelectorAll(".nav-item").forEach(el => {
+      el.classList.remove("active");
+    });
+
+    item.classList.add("active");
+  }
+
+  function abrirInicio() {
+    pageFrame.style.display = "none";
+    pageFrame.removeAttribute("src");
+    homePlaceholder.style.display = "flex";
+    loading.classList.remove("show");
+  }
+
+  function abrirPagina(chave) {
+    const url = ROTAS[chave];
+
+    if (!url) {
+      abrirInicio();
+      return;
+    }
+
+    homePlaceholder.style.display = "none";
+    pageFrame.style.display = "block";
+    loading.classList.add("show");
+
+    pageFrame.src = url;
+  }
+
+  pageFrame.addEventListener("load", () => {
+    loading.classList.remove("show");
+  });
+
+  pageFrame.addEventListener("error", () => {
+    loading.classList.remove("show");
+  });
+
+  document.querySelectorAll(".nav-item").forEach(item => {
+    item.addEventListener("click", event => {
+      event.preventDefault();
+
+      const chave = item.dataset.page;
+      const titulo = item.dataset.title || "";
+
+      ativarItem(item);
+      pageTitle.textContent = titulo;
+      fecharMenuMobile();
+
+      if (chave === "inicio") {
+        abrirInicio();
+      } else {
+        abrirPagina(chave);
+      }
+    });
+  });
+
+  document.getElementById("btnMenu").addEventListener("click", () => {
+    body.classList.toggle("menu-open");
+  });
+
+  document.getElementById("mobileOverlay").addEventListener("click", () => {
+    fecharMenuMobile();
+  });
+
+  window.addEventListener("resize", () => {
+    if (window.innerWidth > 850) {
+      fecharMenuMobile();
+    }
+  });
+</script>
+
+</body>
+</html>
