@@ -30,6 +30,7 @@ function normalizarPedido(body = {}) {
 
   return {
     cliente_id: body.cliente_id || null,
+    loja_id: body.loja_id || null,
     vendedor_id: body.vendedor_id || null,
     entregador_id: body.entregador_id || null,
     tipo_atendimento: ["retirada","entrega","balcao"].includes(body.tipo_atendimento)
@@ -55,6 +56,16 @@ function normalizarPedido(body = {}) {
   };
 }
 
+async function validarBasico(body) {
+  if (!body.cliente_id) throw new Error("Selecione o cliente.");
+  if (!body.loja_id) throw new Error("Selecione a loja / filial.");
+  if (!body.itens.length) throw new Error("Adicione pelo menos um item.");
+
+  if (body.forma_pagamento === "prazo" && !body.data_vencimento) {
+    throw new Error("Informe a data de vencimento.");
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
 
@@ -65,7 +76,7 @@ export default async function handler(req, res) {
 
   try {
     // =========================================================
-    // GET - LISTAR OU ABRIR PEDIDO
+    // GET
     // =========================================================
     if (req.method === "GET") {
       const id = String(req.query?.id || "").trim();
@@ -111,31 +122,17 @@ export default async function handler(req, res) {
     }
 
     // =========================================================
-    // POST - CRIAR PEDIDO
+    // POST - cria pedido SEM movimentar estoque
     // =========================================================
     if (req.method === "POST") {
       const body = normalizarPedido(req.body);
-
-      if (!body.cliente_id) {
-        return res.status(400).json({ error: "Selecione o cliente." });
-      }
-
-      if (!body.itens.length) {
-        return res.status(400).json({
-          error: "Adicione pelo menos um item."
-        });
-      }
-
-      if (body.forma_pagamento === "prazo" && !body.data_vencimento) {
-        return res.status(400).json({
-          error: "Informe a data de vencimento."
-        });
-      }
+      await validarBasico(body);
 
       const { data, error } = await supabase.rpc(
-        "criar_pedido_completo",
+        "criar_pedido_completo_v2",
         {
           p_cliente_id: body.cliente_id,
+          p_loja_id: body.loja_id,
           p_vendedor_id: body.vendedor_id,
           p_entregador_id: body.entregador_id,
           p_tipo_atendimento: body.tipo_atendimento,
@@ -166,32 +163,20 @@ export default async function handler(req, res) {
     }
 
     // =========================================================
-    // PUT - EDITAR PEDIDO COMPLETO
+    // PUT - edita pedido enquanto ainda NÃO foi entregue
+    // Não movimenta estoque.
     // =========================================================
     if (req.method === "PUT") {
       const id = String(req.query?.id || "").trim();
 
       if (!id) {
-        return res.status(400).json({ error: "ID não informado." });
+        return res.status(400).json({
+          error: "ID não informado."
+        });
       }
 
       const body = normalizarPedido(req.body);
-
-      if (!body.cliente_id) {
-        return res.status(400).json({ error: "Selecione o cliente." });
-      }
-
-      if (!body.itens.length) {
-        return res.status(400).json({
-          error: "Adicione pelo menos um item."
-        });
-      }
-
-      if (body.forma_pagamento === "prazo" && !body.data_vencimento) {
-        return res.status(400).json({
-          error: "Informe a data de vencimento."
-        });
-      }
+      await validarBasico(body);
 
       const { data: atual, error: atualError } = await supabase
         .from("pedidos")
@@ -214,10 +199,11 @@ export default async function handler(req, res) {
       }
 
       const { data, error } = await supabase.rpc(
-        "atualizar_pedido_completo",
+        "atualizar_pedido_completo_v2",
         {
           p_pedido_id: id,
           p_cliente_id: body.cliente_id,
+          p_loja_id: body.loja_id,
           p_vendedor_id: body.vendedor_id,
           p_entregador_id: body.entregador_id,
           p_tipo_atendimento: body.tipo_atendimento,
@@ -248,19 +234,57 @@ export default async function handler(req, res) {
     }
 
     // =========================================================
-    // PATCH - ALTERAR STATUS / DAR COMO ENTREGUE / CANCELAR
+    // PATCH
+    // CONCLUIDO => função SQL gera movimentações e marca entregue.
+    // CANCELADO => apenas cancela enquanto não entregue.
     // =========================================================
     if (req.method === "PATCH") {
       const id = String(req.query?.id || "").trim();
 
       if (!id) {
-        return res.status(400).json({ error: "ID não informado." });
+        return res.status(400).json({
+          error: "ID não informado."
+        });
       }
 
       const status = String(req.body?.status || "");
 
       if (!STATUS.includes(status)) {
-        return res.status(400).json({ error: "Status inválido." });
+        return res.status(400).json({
+          error: "Status inválido."
+        });
+      }
+
+      if (status === "concluido") {
+        const { data, error } = await supabase.rpc(
+          "entregar_pedido_e_movimentar_estoque",
+          {
+            p_pedido_id: id,
+            p_usuario_id: auth.user.id,
+            p_usuario_email: auth.user.email
+          }
+        );
+
+        if (error) throw error;
+
+        return res.status(200).json({
+          ok: true,
+          item: data
+        });
+      }
+
+      const { data: atual, error: atualError } = await supabase
+        .from("pedidos")
+        .select("id,status")
+        .eq("id", id)
+        .single();
+
+      if (atualError) throw atualError;
+
+      if (atual.status === "concluido") {
+        return res.status(409).json({
+          error: "Pedido já entregue não pode ter o status alterado."
+        });
       }
 
       const update = {
@@ -269,10 +293,6 @@ export default async function handler(req, res) {
         atualizado_por: auth.user.id,
         atualizado_por_email: auth.user.email
       };
-
-      if (status === "concluido") {
-        update.entregue_em = new Date().toISOString();
-      }
 
       if (status === "cancelado") {
         update.cancelado_em = new Date().toISOString();
@@ -294,6 +314,7 @@ export default async function handler(req, res) {
     }
 
     res.setHeader("Allow", "GET, POST, PUT, PATCH");
+
     return res.status(405).json({
       error: "Método não permitido."
     });

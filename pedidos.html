@@ -226,6 +226,7 @@ tbody tr:hover{background:#fbfdfe}
           <div class="section-body">
             <div class="grid">
               <div class="field span2"><label>Cliente *</label><select id="cliente_id" required><option value="">Selecione o cliente</option></select></div>
+              <div class="field"><label>Loja / filial *</label><select id="loja_id" required><option value="">Selecione a loja</option></select></div>
               <div class="field"><label>Vendedor</label><select id="vendedor_id"><option value="">Sem vendedor</option></select></div>
               <div class="field"><label>Entregador</label><select id="entregador_id"><option value="">Sem entregador</option></select></div>
               <div class="field"><label>Tipo de atendimento</label><select id="tipo_atendimento"><option value="retirada">Retirada</option><option value="entrega">Entrega</option><option value="balcao">Balcão</option></select></div>
@@ -360,8 +361,9 @@ const API_PEDIDOS="/api/pedidos";
 const API_EQUIPE="/api/vendedores-entregadores";
 const API_CLIENTES="/api/clientes-fornecedores";
 const API_PRODUTOS="/api/produtos-servicos";
+const API_LOJAS="/api/lojas";
 
-let pedidos=[], clientes=[], produtos=[], equipe=[], cart=[], produtoSelecionado=null, pedidoAtual=null, editandoId=null;
+let pedidos=[], clientes=[], produtos=[], equipe=[], lojas=[], cart=[], produtoSelecionado=null, pedidoAtual=null, editandoId=null;
 const $=id=>document.getElementById(id);
 const money=new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"});
 const num=new Intl.NumberFormat("pt-BR",{maximumFractionDigits:3});
@@ -380,15 +382,29 @@ document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if
 document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".modal.show").forEach(m=>fechar(m.id))});
 
 async function carregarBases(){
-  const [c,p,e]=await Promise.all([req(API_CLIENTES),req(API_PRODUTOS),req(API_EQUIPE)]);
+  const [c,p,e,l]=await Promise.all([
+    req(API_CLIENTES),
+    req(API_PRODUTOS),
+    req(API_EQUIPE),
+    req(API_LOJAS)
+  ]);
   clientes=(c.items||[]).filter(x=>x.ativo!==false && (x.tipo==="cliente"||x.tipo==="ambos"));
   produtos=(p.items||[]).filter(x=>x.ativo!==false);
   equipe=(e.items||[]).filter(x=>x.ativo!==false);
+  lojas=(l.items||[]).filter(x=>x.ativo!==false);
   montarSelects();
 }
 
 function montarSelects(){
   $("cliente_id").innerHTML='<option value="">Selecione o cliente</option>'+clientes.map(x=>`<option value="${x.id}">${esc(x.nome_fantasia||x.nome)}${x.documento?` • ${esc(x.documento)}`:""}</option>`).join("");
+
+  $("loja_id").innerHTML='<option value="">Selecione a loja</option>'+lojas
+    .sort((a,b)=>(Number(!!b.principal)-Number(!!a.principal)) || String(a.nome||"").localeCompare(String(b.nome||""),"pt-BR"))
+    .map(x=>`<option value="${x.id}">${esc(x.nome)}${x.principal?" • Principal":""}</option>`).join("");
+
+  const principal=lojas.find(x=>x.principal);
+  if(principal && !$("loja_id").value) $("loja_id").value=principal.id;
+
   const vendedores=equipe.filter(x=>x.funcao==="vendedor"||x.funcao==="ambos");
   const entregadores=equipe.filter(x=>x.funcao==="entregador"||x.funcao==="ambos");
   $("vendedor_id").innerHTML='<option value="">Sem vendedor</option>'+vendedores.map(x=>`<option value="${x.id}">${esc(x.nome)}</option>`).join("");
@@ -443,6 +459,8 @@ function novoPedido(){
   $("data_pedido").value=isoLocal();
   $("status").value="aberto";
   $("tipo_atendimento").value="retirada";
+  const principal=lojas.find(x=>x.principal);
+  $("loja_id").value=principal?.id||lojas[0]?.id||"";
   $("forma_pagamento").value="dinheiro";
   $("status_pagamento").value="pago";
   $("desconto_geral").value="0,00";
@@ -481,6 +499,7 @@ async function editarPedido(id){
     $("btnSalvarPedido").textContent="Salvar alterações";
 
     $("cliente_id").value=p.cliente_id||"";
+    $("loja_id").value=p.loja_id||lojas.find(x=>x.principal)?.id||"";
     $("vendedor_id").value=p.vendedor_id||"";
     $("entregador_id").value=p.entregador_id||"";
     $("tipo_atendimento").value=p.tipo_atendimento||"retirada";
@@ -561,7 +580,7 @@ $("forma_pagamento").addEventListener("change",atualizarPrazo);
 function payloadPedido(){
   const t=totais();
   return {
-    cliente_id:$("cliente_id").value||null,vendedor_id:$("vendedor_id").value||null,entregador_id:$("entregador_id").value||null,
+    cliente_id:$("cliente_id").value||null,loja_id:$("loja_id").value||null,vendedor_id:$("vendedor_id").value||null,entregador_id:$("entregador_id").value||null,
     tipo_atendimento:$("tipo_atendimento").value,data_pedido:$("data_pedido").value?new Date($("data_pedido").value).toISOString():new Date().toISOString(),
     previsao_entrega:$("previsao_entrega").value?new Date($("previsao_entrega").value).toISOString():null,status:$("status").value,
     forma_pagamento:$("forma_pagamento").value,status_pagamento:$("status_pagamento").value,
@@ -575,6 +594,7 @@ function payloadPedido(){
 async function salvarPedido(imprimir=false){
   if(!cart.length){toast("Adicione pelo menos um item.","error");return}
   if(!$("cliente_id").value){toast("Selecione o cliente.","error");return}
+  if(!$("loja_id").value){toast("Selecione a loja / filial.","error");return}
   if($("forma_pagamento").value==="prazo"&&!$("data_vencimento").value){toast("Informe o vencimento.","error");return}
   const btn=$("btnSalvarPedido");btn.disabled=true;$("btnSalvarImprimir").disabled=true;
   try{
@@ -597,7 +617,7 @@ async function verPedido(id){
   try{const d=await req(`${API_PEDIDOS}?id=${encodeURIComponent(id)}`);pedidoAtual=d.item;const p=pedidoAtual;$("detalheSub").textContent=`Pedido #${p.numero}`;
     $("detalheBody").innerHTML=`
       <div class="section"><div class="section-head"><div class="section-title">Pedido</div></div><div class="section-body">
-      <div class="grid two"><div><strong>Cliente</strong><div class="order-meta">${esc(p.cliente_nome||"-")}</div></div><div><strong>Data</strong><div class="order-meta">${new Date(p.data_pedido).toLocaleString("pt-BR")}</div></div><div><strong>Vendedor</strong><div class="order-meta">${esc(p.vendedor_nome||"-")}</div></div><div><strong>Entregador</strong><div class="order-meta">${esc(p.entregador_nome||"-")}</div></div><div><strong>Pagamento</strong><div class="order-meta">${esc(pgLabel(p.forma_pagamento))} • ${esc(p.status_pagamento)}</div></div><div><strong>Status</strong><div class="order-meta">${esc(p.status)}</div></div></div></div></div>
+      <div class="grid two"><div><strong>Cliente</strong><div class="order-meta">${esc(p.cliente_nome||"-")}</div></div><div><strong>Loja</strong><div class="order-meta">${esc(p.loja_nome||"-")}</div></div><div><strong>Data</strong><div class="order-meta">${new Date(p.data_pedido).toLocaleString("pt-BR")}</div></div><div><strong>Vendedor</strong><div class="order-meta">${esc(p.vendedor_nome||"-")}</div></div><div><strong>Entregador</strong><div class="order-meta">${esc(p.entregador_nome||"-")}</div></div><div><strong>Pagamento</strong><div class="order-meta">${esc(pgLabel(p.forma_pagamento))} • ${esc(p.status_pagamento)}</div></div><div><strong>Status</strong><div class="order-meta">${esc(p.status)}</div></div></div></div></div>
       <div class="section"><div class="section-head"><div class="section-title">Itens</div></div><div class="section-body"><div class="cart-wrap"><table class="cart-table"><thead><tr><th>Item</th><th>Qtd.</th><th>Unit.</th><th>Desc.</th><th>Subtotal</th></tr></thead><tbody>${(p.itens||[]).map(i=>`<tr><td>${esc(i.nome)}</td><td>${num.format(Number(i.quantidade))}</td><td>${money.format(Number(i.preco_unitario))}</td><td>${money.format(Number(i.desconto||0))}</td><td class="money">${money.format(Number(i.subtotal||0))}</td></tr>`).join("")}</tbody></table></div></div></div>
       <div class="totals-box"><div class="total-line"><span>Subtotal</span><strong>${money.format(Number(p.subtotal||0))}</strong></div><div class="total-line"><span>Descontos</span><strong>${money.format(Number(p.desconto_total||0))}</strong></div><div class="total-line"><span>Frete</span><strong>${money.format(Number(p.frete||0))}</strong></div><div class="total-line final"><span>Total</span><strong>${money.format(Number(p.total||0))}</strong></div></div>
       ${p.observacoes?`<div style="margin-top:12px;font-size:11px"><strong>Observações:</strong><br>${esc(p.observacoes)}</div>`:""}
@@ -612,6 +632,7 @@ function montarImpressao(p){
   $("printArea").innerHTML=`<div class="receipt">
     <div class="center"><h1>PEDIDO #${esc(p.numero)}</h1><h2>${new Date(p.data_pedido).toLocaleString("pt-BR")}</h2></div><hr>
     <div><strong>Cliente:</strong> ${esc(p.cliente_nome||"-")}</div>
+    <div class="small"><strong>Loja:</strong> ${esc(p.loja_nome||"-")}</div>
     ${p.cliente_documento?`<div class="small">Documento: ${esc(p.cliente_documento)}</div>`:""}
     ${p.cliente_telefone?`<div class="small">Telefone: ${esc(p.cliente_telefone)}</div>`:""}
     <div class="small">Vendedor: ${esc(p.vendedor_nome||"-")}</div><div class="small">Entregador: ${esc(p.entregador_nome||"-")}</div><hr>
