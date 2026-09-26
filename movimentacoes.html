@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#166f9f">
+<title>Movimentação de Estoque</title>
+<style>
+:root{
+  --blue:#166f9f;--blue-dark:#0e5d8a;--active:#087fc2;--blue-soft:#eef8fe;
+  --bg:#e9edf1;--panel:#fff;--border:#d8dee4;--text:#263238;--muted:#6f7a83;
+  --success:#1f8b57;--danger:#c53f3f;--warning:#b57d10;--purple:#7652bd;
+  --shadow:0 2px 10px rgba(24,48,66,.09)
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;min-height:100%;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+body{padding:14px}
+button,input,select{font:inherit}
+.page{max-width:1600px;margin:0 auto}
+.header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px}
+.header h1{font-size:22px;line-height:1.15;color:#22323d;font-weight:850}
+.header p{margin-top:6px;font-size:12px;color:var(--muted)}
+.btn{border:0;border-radius:9px;height:40px;padding:0 14px;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;font-weight:750;font-size:12px;transition:.16s ease;white-space:nowrap}
+.btn:hover{transform:translateY(-1px)}
+.btn-secondary{background:#fff;color:#3e4d56;border:1px solid var(--border)}
+.btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.toolbar{display:grid;grid-template-columns:minmax(250px,1.3fr) repeat(4,minmax(135px,.55fr)) auto;gap:8px;background:#fff;border:1px solid var(--border);box-shadow:var(--shadow);padding:10px;margin-bottom:12px}
+.search{min-height:40px;display:flex;align-items:center;gap:8px;padding:0 11px;border:1px solid var(--border);border-radius:8px;background:#fff}
+.search svg{width:17px;height:17px;stroke:#82919b;fill:none;stroke-width:2}
+.search input{border:0;outline:0;width:100%;background:transparent;color:var(--text);font-size:12px}
+.control{width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 10px;outline:0;background:#fff;color:#34434c;font-size:11px}
+.control:focus{border-color:#4b9eca;box-shadow:0 0 0 3px rgba(8,127,194,.08)}
+.summary{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px}
+.stat{background:#fff;border:1px solid var(--border);padding:14px;box-shadow:var(--shadow)}
+.stat small{display:block;color:#83909a;font-size:10px;text-transform:uppercase;letter-spacing:.06em;font-weight:800}
+.stat strong{display:block;margin-top:5px;font-size:20px;color:#24343f}
+.stat span{display:block;margin-top:3px;color:#8a969e;font-size:10px}
+.stat.entry strong{color:var(--success)}.stat.exit strong{color:var(--danger)}
+.panel{background:#fff;border:1px solid var(--border);box-shadow:var(--shadow);min-height:390px;overflow:hidden}
+.table-wrap{overflow:auto}
+table{width:100%;border-collapse:collapse;min-width:1200px}
+thead th{position:sticky;top:0;z-index:2;background:#f7f9fa;color:#66747d;font-size:10px;text-transform:uppercase;letter-spacing:.045em;text-align:left;padding:11px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody td{padding:11px 12px;border-bottom:1px solid #edf1f3;font-size:11px;vertical-align:middle}
+tbody tr{cursor:pointer}tbody tr:hover{background:#fbfdfe}
+.product-main{display:flex;align-items:center;gap:9px;min-width:220px}
+.product-icon{width:36px;height:36px;border-radius:8px;background:#eef5f9;display:grid;place-items:center;color:#4b86a7;font-weight:850;font-size:11px;flex:0 0 auto}
+.product-name{font-weight:800;color:#2d3e48;font-size:11px}.product-meta{margin-top:3px;color:#8c989f;font-size:9px}
+.badge{display:inline-flex;align-items:center;min-height:23px;padding:0 8px;border-radius:999px;font-size:9px;font-weight:850;border:1px solid transparent;white-space:nowrap}
+.badge-entry{background:#edf9f3;color:#1f8b57;border-color:#d1efdf}
+.badge-exit{background:#fff0f0;color:#b23d3d;border-color:#ffd1d1}
+.badge-adjust{background:#fff7e8;color:#9b6b12;border-color:#f4dfb3}
+.badge-return{background:#f5f0ff;color:#7652bd;border-color:#e6dafa}
+.badge-reversal{background:#eef8fe;color:#087fc2;border-color:#cfeaf9}
+.qty{font-size:13px;font-weight:900}.qty.pos{color:var(--success)}.qty.neg{color:var(--danger)}
+.balance{font-weight:800;color:#35454f}
+.origin{font-weight:700;color:#53626b}.origin small{display:block;margin-top:3px;color:#909ba2;font-size:9px;font-weight:500}
+.loading{display:none;min-height:330px;align-items:center;justify-content:center}.loading.show{display:flex}
+.spinner{width:32px;height:32px;border:3px solid #dce9f0;border-top-color:var(--active);border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.empty{min-height:330px;display:none;align-items:center;justify-content:center;text-align:center;padding:30px}.empty.show{display:flex}
+.empty-icon{width:58px;height:58px;border-radius:16px;background:var(--blue-soft);display:grid;place-items:center;margin:0 auto 14px;color:var(--active)}
+.empty-icon svg{width:28px;height:28px;stroke:currentColor;fill:none;stroke-width:1.7}
+.empty h3{font-size:16px;color:#33434d;margin-bottom:6px}.empty p{font-size:12px;color:#7e8b94}
+.modal{position:fixed;inset:0;z-index:5000;display:none;align-items:center;justify-content:center;padding:12px;background:rgba(13,31,43,.42);backdrop-filter:blur(3px)}.modal.show{display:flex}
+.modal-card{width:min(720px,100%);max-height:calc(100vh - 24px);overflow:auto;background:#fff;border-radius:16px;box-shadow:0 25px 70px rgba(12,32,45,.26)}
+.modal-head{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 18px;background:#fff;border-bottom:1px solid #e5eaed}
+.modal-head h2{font-size:17px}.modal-head p{margin-top:3px;color:#8a969e;font-size:10px}
+.close-btn{width:34px;height:34px;border:1px solid var(--border);border-radius:9px;background:#fff;display:grid;place-items:center;cursor:pointer;color:#64717a}
+.modal-body{padding:16px 18px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.detail{padding:11px;border:1px solid #e4e9ec;background:#fbfcfd;border-radius:8px}.detail.full{grid-column:1/-1}
+.detail small{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.055em;color:#8a969e;font-weight:800;margin-bottom:4px}.detail strong{font-size:12px;color:#33434d}.detail p{font-size:11px;color:#53616a;line-height:1.5}
+.flow{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;margin-top:12px;padding:14px;border:1px solid #dfe6ea;background:#fff}
+.flow-box{text-align:center}.flow-box small{display:block;color:#89959d;font-size:9px;text-transform:uppercase}.flow-box strong{display:block;margin-top:4px;font-size:22px;color:#2c3c46}.flow-arrow{font-size:22px;color:#8da1ad}
+.modal-foot{display:flex;justify-content:flex-end;padding:12px 18px;border-top:1px solid #e7ecef}
+.toast-wrap{position:fixed;right:18px;bottom:18px;z-index:9999;width:min(360px,calc(100vw - 36px))}.toast{background:#fff;border:1px solid var(--border);border-left:4px solid var(--danger);box-shadow:0 12px 32px rgba(13,40,58,.18);padding:12px 13px;border-radius:10px;font-size:11px}
+@media(max-width:1100px){.toolbar{grid-template-columns:1fr 1fr}.toolbar .search{grid-column:1/-1}.summary{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:650px){body{padding:8px}.header h1{font-size:19px}.header p{display:none}.toolbar{grid-template-columns:1fr;padding:8px}.toolbar .search{grid-column:auto}.summary{grid-template-columns:repeat(2,1fr);gap:7px}.stat{padding:11px}.detail-grid{grid-template-columns:1fr}.detail.full{grid-column:auto}.modal{padding:5px}.modal-card{max-height:calc(100vh - 10px)}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div>
+      <h1>Movimentação de Estoque</h1>
+      <p>Histórico completo de tudo que alterou o estoque de cada loja.</p>
+    </div>
+    <button class="btn btn-secondary" id="btnAtualizar">
+      <svg viewBox="0 0 24 24"><path d="M20 6v5h-5"/><path d="M4 18v-5h5"/><path d="M18.5 9A7 7 0 0 0 6 6.5L4 9M5.5 15A7 7 0 0 0 18 17.5l2-2.5"/></svg>
+      Atualizar
+    </button>
+  </div>
+
+  <div class="toolbar">
+    <div class="search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="busca" placeholder="Buscar produto, pedido, observação ou usuário...">
+    </div>
+    <select class="control" id="fLoja"><option value="">Todas as lojas</option></select>
+    <select class="control" id="fTipo">
+      <option value="">Todos os movimentos</option>
+      <option value="entrada">Entradas</option>
+      <option value="saida">Saídas</option>
+      <option value="devolucao">Devoluções/retornos</option>
+      <option value="ajuste_positivo">Ajustes positivos</option>
+      <option value="ajuste_negativo">Ajustes negativos</option>
+      <option value="estorno">Estornos</option>
+    </select>
+    <select class="control" id="fOrigem">
+      <option value="">Todas as origens</option>
+      <option value="pedido">Pedidos</option>
+      <option value="entrada">Entrada manual</option>
+      <option value="ajuste">Ajuste de estoque</option>
+      <option value="devolucao">Devolução</option>
+      <option value="estorno">Estorno</option>
+    </select>
+    <input class="control" id="fInicio" type="date" title="Data inicial">
+    <input class="control" id="fFim" type="date" title="Data final">
+  </div>
+
+  <div class="summary">
+    <div class="stat"><small>Movimentações</small><strong id="sTotal">0</strong><span>no filtro atual</span></div>
+    <div class="stat entry"><small>Entradas</small><strong id="sEntradas">0</strong><span>unidades movimentadas</span></div>
+    <div class="stat exit"><small>Saídas</small><strong id="sSaidas">0</strong><span>unidades movimentadas</span></div>
+    <div class="stat"><small>Pedidos</small><strong id="sPedidos">0</strong><span>movimentos de entrega</span></div>
+    <div class="stat"><small>Retornos</small><strong id="sRetornos">0</strong><span>vasilhames/devoluções</span></div>
+  </div>
+
+  <div class="panel">
+    <div class="loading" id="loading"><div class="spinner"></div></div>
+    <div class="table-wrap" id="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Data / hora</th>
+            <th>Produto</th>
+            <th>Loja</th>
+            <th>Movimento</th>
+            <th>Quantidade</th>
+            <th>Saldo antes</th>
+            <th>Saldo depois</th>
+            <th>Origem</th>
+            <th>Usuário</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="empty">
+      <div>
+        <div class="empty-icon"><svg viewBox="0 0 24 24"><path d="M7 7h11l-3-3"/><path d="m18 7-3 3"/><path d="M17 17H6l3 3"/><path d="m6 17 3-3"/></svg></div>
+        <h3>Nenhuma movimentação encontrada</h3>
+        <p>As entradas, saídas, ajustes e entregas aparecerão aqui.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modalDetalhe">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div><h2>Detalhes da movimentação</h2><p id="detSub"></p></div>
+      <button class="close-btn" id="btnFechar">✕</button>
+    </div>
+    <div class="modal-body" id="detBody"></div>
+    <div class="modal-foot"><button class="btn btn-secondary" id="btnFechar2">Fechar</button></div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+const API="/api/movimentacoes-estoque";
+let dados=[];
+const $=id=>document.getElementById(id);
+const nf=new Intl.NumberFormat("pt-BR",{maximumFractionDigits:3});
+
+function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function toast(msg){const e=document.createElement("div");e.className="toast";e.textContent=msg;$("toastWrap").appendChild(e);setTimeout(()=>e.remove(),3500)}
+async function req(url){const r=await fetch(url,{credentials:"include",cache:"no-store"});let d={};try{d=await r.json()}catch{}if(r.status===401){window.top.location.href="/";throw new Error("Sessão expirada.")}if(!r.ok)throw new Error(d.error||"Erro ao carregar.");return d}
+
+function tipoInfo(t){
+  const m={
+    entrada:["badge-entry","Entrada","+"],
+    saida:["badge-exit","Saída","-"],
+    devolucao:["badge-return","Devolução / retorno","+"],
+    ajuste_positivo:["badge-adjust","Ajuste +","+"],
+    ajuste_negativo:["badge-adjust","Ajuste -","-"],
+    estorno:["badge-reversal","Estorno","+"]
+  };
+  return m[t]||["badge-adjust",t||"Movimento",""];
+}
+function origemLabel(o){
+  return ({pedido:"Pedido entregue",entrada:"Entrada manual",ajuste:"Ajuste de estoque",devolucao:"Devolução",estorno:"Estorno"})[o]||o||"-"
+}
+function iniciais(n){return String(n||"P").trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase()}
+
+async function carregar(){
+  $("loading").classList.add("show");$("tableWrap").style.display="none";$("empty").classList.remove("show");
+  try{
+    const d=await req(API);
+    dados=d.items||[];
+    montarLojas();
+    render();
+  }catch(e){dados=[];toast(e.message);render()}
+  finally{$("loading").classList.remove("show")}
+}
+function montarLojas(){
+  const atual=$("fLoja").value;
+  const map=new Map();
+  dados.forEach(x=>{if(x.loja_id&&x.loja_nome)map.set(x.loja_id,x.loja_nome)});
+  $("fLoja").innerHTML='<option value="">Todas as lojas</option>'+[...map].sort((a,b)=>a[1].localeCompare(b[1],"pt-BR")).map(([id,n])=>`<option value="${id}">${esc(n)}</option>`).join("");
+  if(map.has(atual))$("fLoja").value=atual;
+}
+function filtrados(){
+  const q=$("busca").value.trim().toLowerCase(),loja=$("fLoja").value,tipo=$("fTipo").value,orig=$("fOrigem").value,ini=$("fInicio").value,fim=$("fFim").value;
+  return dados.filter(x=>{
+    const texto=[x.produto_nome,x.produto_codigo,x.produto_sku,x.loja_nome,x.origem_documento,x.observacao,x.usuario_email].filter(Boolean).join(" ").toLowerCase();
+    if(q&&!texto.includes(q))return false;
+    if(loja&&x.loja_id!==loja)return false;
+    if(tipo&&x.tipo!==tipo)return false;
+    if(orig&&x.origem!==orig)return false;
+    const dia=String(x.criado_em||"").slice(0,10);
+    if(ini&&dia<ini)return false;if(fim&&dia>fim)return false;
+    return true
+  })
+}
+function render(){
+  const list=filtrados();
+  $("sTotal").textContent=list.length;
+  $("sEntradas").textContent=nf.format(list.filter(x=>["entrada","devolucao","ajuste_positivo","estorno"].includes(x.tipo)).reduce((a,x)=>a+Number(x.quantidade||0),0));
+  $("sSaidas").textContent=nf.format(list.filter(x=>["saida","ajuste_negativo"].includes(x.tipo)).reduce((a,x)=>a+Number(x.quantidade||0),0));
+  $("sPedidos").textContent=list.filter(x=>x.origem==="pedido").length;
+  $("sRetornos").textContent=list.filter(x=>x.tipo==="devolucao").length;
+
+  if(!list.length){$("tableWrap").style.display="none";$("empty").classList.add("show");return}
+  $("empty").classList.remove("show");$("tableWrap").style.display="block";
+  $("tbody").innerHTML=list.map(x=>{
+    const ti=tipoInfo(x.tipo),pos=["entrada","devolucao","ajuste_positivo","estorno"].includes(x.tipo);
+    return `<tr onclick="detalhe('${x.id}')">
+      <td><strong>${new Date(x.criado_em).toLocaleDateString("pt-BR")}</strong><div class="product-meta">${new Date(x.criado_em).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}</div></td>
+      <td><div class="product-main"><div class="product-icon">${esc(iniciais(x.produto_nome))}</div><div><div class="product-name">${esc(x.produto_nome)}</div><div class="product-meta">${esc(x.produto_sku||x.produto_codigo||"Sem código")}</div></div></div></td>
+      <td>${esc(x.loja_nome||"-")}</td>
+      <td><span class="badge ${ti[0]}">${esc(ti[1])}</span></td>
+      <td class="qty ${pos?"pos":"neg"}">${ti[2]}${nf.format(Number(x.quantidade||0))} ${esc(x.unidade||"UN")}</td>
+      <td class="balance">${nf.format(Number(x.estoque_antes||0))}</td>
+      <td class="balance">${nf.format(Number(x.estoque_depois||0))}</td>
+      <td><div class="origin">${esc(origemLabel(x.origem))}<small>${esc(x.origem_documento||"")}</small></div></td>
+      <td>${esc(x.usuario_email||"-")}</td>
+    </tr>`
+  }).join("")
+}
+function detalhe(id){
+  const x=dados.find(i=>i.id===id);if(!x)return;
+  const ti=tipoInfo(x.tipo);
+  $("detSub").textContent=`${x.produto_nome||"Produto"} • ${new Date(x.criado_em).toLocaleString("pt-BR")}`;
+  $("detBody").innerHTML=`
+    <div class="detail-grid">
+      <div class="detail"><small>Produto</small><strong>${esc(x.produto_nome||"-")}</strong></div>
+      <div class="detail"><small>Loja</small><strong>${esc(x.loja_nome||"-")}</strong></div>
+      <div class="detail"><small>Movimento</small><span class="badge ${ti[0]}">${esc(ti[1])}</span></div>
+      <div class="detail"><small>Quantidade</small><strong>${ti[2]}${nf.format(Number(x.quantidade||0))} ${esc(x.unidade||"UN")}</strong></div>
+      <div class="detail"><small>Origem</small><strong>${esc(origemLabel(x.origem))}</strong></div>
+      <div class="detail"><small>Referência</small><strong>${esc(x.origem_documento||"-")}</strong></div>
+      <div class="detail"><small>Usuário</small><strong>${esc(x.usuario_email||"-")}</strong></div>
+      <div class="detail"><small>Data / hora</small><strong>${new Date(x.criado_em).toLocaleString("pt-BR")}</strong></div>
+      <div class="detail full"><small>Observação</small><p>${esc(x.observacao||"Sem observação.")}</p></div>
+    </div>
+    <div class="flow">
+      <div class="flow-box"><small>Saldo antes</small><strong>${nf.format(Number(x.estoque_antes||0))}</strong></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box"><small>Saldo depois</small><strong>${nf.format(Number(x.estoque_depois||0))}</strong></div>
+    </div>`;
+  $("modalDetalhe").classList.add("show")
+}
+function fechar(){$("modalDetalhe").classList.remove("show")}
+$("btnFechar").onclick=fechar;$("btnFechar2").onclick=fechar;$("modalDetalhe").addEventListener("click",e=>{if(e.target===$("modalDetalhe"))fechar()});
+["busca","fLoja","fTipo","fOrigem","fInicio","fFim"].forEach(id=>$(id).addEventListener(id==="busca"?"input":"change",render));
+$("btnAtualizar").onclick=carregar;
+carregar();
+</script>
+</body>
+</html>
