@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#166f9f">
+<title>Minhas Lojas</title>
+<style>
+:root{
+  --blue:#166f9f;--blue-dark:#0e5d8a;--active:#087fc2;--blue-soft:#eef8fe;
+  --bg:#e9edf1;--panel:#fff;--border:#d8dee4;--text:#263238;--muted:#6f7a83;
+  --success:#1f8b57;--danger:#c53f3f;--warning:#b57d10;--purple:#7652bd;
+  --shadow:0 2px 10px rgba(24,48,66,.09)
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;min-height:100%;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+body{padding:14px}
+button,input,select,textarea{font:inherit}
+.page{max-width:1550px;margin:0 auto}
+.header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px}
+.header h1{font-size:22px;line-height:1.15;color:#22323d;font-weight:850}
+.header p{margin-top:6px;font-size:12px;color:var(--muted)}
+.header-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:0;border-radius:9px;height:40px;padding:0 14px;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;font-weight:750;font-size:12px;transition:.16s ease;white-space:nowrap}
+.btn:hover{transform:translateY(-1px)}
+.btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+.btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn-primary{background:linear-gradient(135deg,var(--blue-dark),var(--active));color:#fff;box-shadow:0 7px 18px rgba(8,127,194,.18)}
+.btn-secondary{background:#fff;color:#3e4d56;border:1px solid var(--border)}
+.btn-danger{background:#fff1f1;color:var(--danger);border:1px solid #ffd2d2}
+.toolbar{display:grid;grid-template-columns:minmax(260px,1.3fr) repeat(3,minmax(150px,.5fr)) auto;gap:9px;background:#fff;border:1px solid var(--border);box-shadow:var(--shadow);padding:10px;margin-bottom:12px}
+.search{min-height:40px;display:flex;align-items:center;gap:8px;padding:0 11px;border:1px solid var(--border);border-radius:8px;background:#fff}
+.search svg{width:17px;height:17px;stroke:#82919b;fill:none;stroke-width:2}
+.search input{border:0;outline:0;width:100%;background:transparent;color:var(--text);font-size:12px}
+.control{width:100%;min-height:40px;border:1px solid var(--border);border-radius:8px;padding:0 10px;outline:0;background:#fff;color:#34434c;font-size:12px}
+.control:focus{border-color:#4b9eca;box-shadow:0 0 0 3px rgba(8,127,194,.08)}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+.stat{background:#fff;border:1px solid var(--border);padding:14px;box-shadow:var(--shadow)}
+.stat small{display:block;color:#83909a;font-size:10px;text-transform:uppercase;letter-spacing:.06em;font-weight:800}
+.stat strong{display:block;margin-top:5px;font-size:20px;color:#24343f}
+.stat span{display:block;margin-top:3px;color:#8a969e;font-size:10px}
+.grid-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.store-card{background:#fff;border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden;position:relative}
+.store-card.main{border-color:#9dcee9}
+.store-top{padding:14px 14px 12px;display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #edf1f3}
+.store-title{display:flex;gap:10px;min-width:0}
+.store-icon{width:44px;height:44px;border-radius:10px;background:var(--blue-soft);display:grid;place-items:center;color:var(--active);flex:0 0 auto}
+.store-icon svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8}
+.store-name{font-size:14px;font-weight:850;color:#2a3b46;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.store-code{margin-top:3px;font-size:9px;color:#89959d;text-transform:uppercase;letter-spacing:.05em}
+.store-body{padding:12px 14px}
+.info-line{display:flex;gap:8px;margin:7px 0;font-size:10px;color:#5d6c75;line-height:1.45}
+.info-line svg{width:14px;height:14px;stroke:#80909a;fill:none;stroke-width:2;flex:0 0 auto;margin-top:1px}
+.badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.badge{display:inline-flex;align-items:center;min-height:23px;padding:0 8px;border-radius:999px;font-size:9px;font-weight:800;border:1px solid transparent}
+.badge-main{background:#eef8fe;color:#087fc2;border-color:#cfeaf9}
+.badge-active{background:#edf9f3;color:#1f8b57;border-color:#d1efdf}
+.badge-inactive{background:#f4f5f6;color:#7b858d;border-color:#e1e5e8}
+.badge-stock{background:#f5f0ff;color:#7652bd;border-color:#e6dafa}
+.store-actions{display:flex;gap:6px;padding:10px 14px;border-top:1px solid #edf1f3;background:#fbfcfd}
+.store-actions .btn{height:34px;padding:0 10px;font-size:10px}
+.empty{min-height:330px;display:none;align-items:center;justify-content:center;text-align:center;padding:30px;background:#fff;border:1px solid var(--border);box-shadow:var(--shadow)}
+.empty.show{display:flex}
+.empty-icon{width:58px;height:58px;border-radius:16px;background:var(--blue-soft);display:grid;place-items:center;margin:0 auto 14px;color:var(--active)}
+.empty-icon svg{width:28px;height:28px;stroke:currentColor;fill:none;stroke-width:1.7}
+.loading{display:none;min-height:330px;align-items:center;justify-content:center;background:#fff;border:1px solid var(--border)}
+.loading.show{display:flex}
+.spinner{width:32px;height:32px;border:3px solid #dce9f0;border-top-color:var(--active);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.modal{position:fixed;inset:0;z-index:5000;display:none;align-items:center;justify-content:center;padding:12px;background:rgba(13,31,43,.42);backdrop-filter:blur(3px)}
+.modal.show{display:flex}
+.modal-card{width:min(980px,100%);max-height:calc(100vh - 24px);overflow:auto;background:#fff;border-radius:16px;box-shadow:0 25px 70px rgba(12,32,45,.26)}
+.modal-card.small{width:min(720px,100%)}
+.modal-head{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 18px;background:#fff;border-bottom:1px solid #e5eaed}
+.modal-head h2{font-size:17px;color:#2b3a44}.modal-head p{margin-top:3px;font-size:10px;color:#8a969e}
+.close-btn{width:34px;height:34px;border:1px solid var(--border);border-radius:9px;background:#fff;display:grid;place-items:center;cursor:pointer;color:#64717a}
+.form-body{padding:16px 18px}
+.section{border:1px solid #e1e7eb;background:#fff;margin-bottom:12px}
+.section-head{padding:11px 12px;background:#f7f9fa;border-bottom:1px solid #e1e7eb}
+.section-title{font-size:11px;text-transform:uppercase;letter-spacing:.065em;font-weight:850;color:#5c6b74}
+.section-body{padding:12px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.field.full{grid-column:1/-1}
+.field label{display:block;margin:0 0 6px 2px;font-size:10px;color:#596871;font-weight:800}
+.field input,.field select,.field textarea{width:100%;border:1px solid var(--border);border-radius:8px;outline:0;background:#fff;color:#2e3c45;padding:0 10px;font-size:12px}
+.field input,.field select{height:40px}
+.field textarea{min-height:82px;padding-top:10px;resize:vertical;line-height:1.45}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#4b9eca;box-shadow:0 0 0 3px rgba(8,127,194,.08)}
+.switch-line{min-height:42px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.switch-text strong{display:block;font-size:11px}.switch-text small{display:block;margin-top:3px;color:#8b979f;font-size:9px}
+.switch{position:relative;width:42px;height:24px;flex:0 0 auto}.switch input{display:none}.switch span{position:absolute;inset:0;background:#cbd3d8;border-radius:999px;cursor:pointer;transition:.2s}.switch span:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 4px rgba(0,0,0,.2)}.switch input:checked+span{background:var(--active)}.switch input:checked+span:before{transform:translateX(18px)}
+.hours{display:grid;gap:7px}
+.hour-row{display:grid;grid-template-columns:110px 1fr 1fr auto;gap:8px;align-items:center}
+.hour-row strong{font-size:10px;color:#52616a}
+.hour-row input{height:36px;border:1px solid var(--border);border-radius:7px;padding:0 8px;font-size:11px}
+.hour-row .closed{font-size:9px;color:#8a969e}
+.modal-foot{position:sticky;bottom:0;z-index:10;display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;background:#fff;border-top:1px solid #e7ecef}
+.toast-wrap{position:fixed;right:18px;bottom:18px;z-index:9999;display:grid;gap:8px;width:min(360px,calc(100vw - 36px))}
+.toast{background:#fff;border:1px solid var(--border);border-left:4px solid var(--active);box-shadow:0 12px 32px rgba(13,40,58,.18);padding:12px 13px;border-radius:10px;font-size:11px;color:#42515a}
+.toast.error{border-left-color:var(--danger)}.toast.success{border-left-color:var(--success)}
+@media(max-width:1100px){.grid-cards{grid-template-columns:repeat(2,1fr)}.toolbar{grid-template-columns:1fr 1fr}.toolbar .search{grid-column:1/-1}}
+@media(max-width:680px){body{padding:8px}.header{align-items:center}.header h1{font-size:19px}.header p{display:none}.toolbar{grid-template-columns:1fr;padding:8px}.toolbar .search{grid-column:auto}.summary{grid-template-columns:repeat(2,1fr);gap:7px}.grid-cards{grid-template-columns:1fr}.grid,.grid.three{grid-template-columns:1fr}.field.full{grid-column:auto}.hour-row{grid-template-columns:90px 1fr 1fr}.hour-row .closed{grid-column:2/-1}.modal{padding:5px}.modal-card{max-height:calc(100vh - 10px);border-radius:12px}.modal-head,.form-body,.modal-foot{padding-left:10px;padding-right:10px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div>
+      <h1>Minhas Lojas</h1>
+      <p>Gerencie filiais, endereços, horários e configurações de operação.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" id="btnNovaLoja">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Nova loja
+      </button>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="busca" placeholder="Buscar por nome, código, CNPJ, cidade ou responsável...">
+    </div>
+    <select class="control" id="filtroStatus">
+      <option value="">Todas</option>
+      <option value="ativo">Ativas</option>
+      <option value="inativo">Inativas</option>
+    </select>
+    <select class="control" id="filtroPrincipal">
+      <option value="">Principal e filiais</option>
+      <option value="principal">Loja principal</option>
+      <option value="filial">Filiais</option>
+    </select>
+    <select class="control" id="filtroEstado">
+      <option value="">Todos os estados</option>
+    </select>
+    <button class="btn btn-secondary" id="btnAtualizar">
+      <svg viewBox="0 0 24 24"><path d="M20 6v5h-5"/><path d="M4 18v-5h5"/><path d="M18.5 9A7 7 0 0 0 6 6.5L4 9M5.5 15A7 7 0 0 0 18 17.5l2-2.5"/></svg>
+      Atualizar
+    </button>
+  </div>
+
+  <div class="summary">
+    <div class="stat"><small>Total</small><strong id="sTotal">0</strong><span>lojas cadastradas</span></div>
+    <div class="stat"><small>Ativas</small><strong id="sAtivas">0</strong><span>em operação</span></div>
+    <div class="stat"><small>Filiais</small><strong id="sFiliais">0</strong><span>unidades secundárias</span></div>
+    <div class="stat"><small>Principal</small><strong id="sPrincipal">-</strong><span>loja padrão</span></div>
+  </div>
+
+  <div class="loading" id="loading"><div class="spinner"></div></div>
+  <div class="empty" id="empty">
+    <div><div class="empty-icon"><svg viewBox="0 0 24 24"><path d="M4 10V4h16v6"/><path d="M3 10h18l-1 4a3 3 0 0 1-3 2 3 3 0 0 1-3-2 3 3 0 0 1-3 2 3 3 0 0 1-3-2 3 3 0 0 1-3 2 3 3 0 0 1-3-2l1-4Z"/><path d="M5 16v4h14v-4"/></svg></div><h3>Nenhuma loja encontrada</h3><p style="font-size:12px;color:#7e8b94">Cadastre sua primeira unidade para começar.</p></div>
+  </div>
+  <div class="grid-cards" id="gridCards"></div>
+</div>
+
+<div class="modal" id="modalLoja">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div><h2 id="modalTitle">Nova loja</h2><p>Cadastre todos os dados da unidade.</p></div>
+      <button class="close-btn" data-close="modalLoja">✕</button>
+    </div>
+    <form id="formLoja">
+      <div class="form-body">
+
+        <div class="section">
+          <div class="section-head"><div class="section-title">Identificação</div></div>
+          <div class="section-body">
+            <div class="grid">
+              <div class="field"><label>Nome da loja *</label><input id="nome" required maxlength="160" placeholder="Ex.: Loja Centro"></div>
+              <div class="field"><label>Código interno *</label><input id="codigo" required maxlength="40" placeholder="Ex.: CENTRO01"></div>
+              <div class="field"><label>Razão social</label><input id="razao_social" maxlength="180"></div>
+              <div class="field"><label>CNPJ</label><input id="cnpj" maxlength="24"></div>
+              <div class="field"><label>Inscrição estadual</label><input id="inscricao_estadual" maxlength="50"></div>
+              <div class="field"><label>Responsável</label><input id="responsavel" maxlength="120"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head"><div class="section-title">Contato</div></div>
+          <div class="section-body">
+            <div class="grid">
+              <div class="field"><label>Telefone</label><input id="telefone" maxlength="30"></div>
+              <div class="field"><label>WhatsApp</label><input id="whatsapp" maxlength="30"></div>
+              <div class="field full"><label>E-mail</label><input id="email" type="email" maxlength="180"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head"><div class="section-title">Endereço</div></div>
+          <div class="section-body">
+            <div class="grid three">
+              <div class="field"><label>CEP</label><input id="cep" maxlength="12"></div>
+              <div class="field" style="grid-column:span 2"><label>Logradouro</label><input id="logradouro" maxlength="180"></div>
+              <div class="field"><label>Número</label><input id="numero" maxlength="30"></div>
+              <div class="field"><label>Complemento</label><input id="complemento" maxlength="120"></div>
+              <div class="field"><label>Bairro</label><input id="bairro" maxlength="120"></div>
+              <div class="field"><label>Cidade</label><input id="cidade" maxlength="120"></div>
+              <div class="field"><label>UF</label><input id="estado" maxlength="2" style="text-transform:uppercase"></div>
+              <div class="field"><label>País</label><input id="pais" maxlength="80" value="Brasil"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head"><div class="section-title">Operação</div></div>
+          <div class="section-body">
+            <div class="grid">
+              <div class="field">
+                <div class="switch-line">
+                  <div class="switch-text"><strong>Loja ativa</strong><small>Disponível para pedidos e operações.</small></div>
+                  <label class="switch"><input id="ativo" type="checkbox" checked><span></span></label>
+                </div>
+              </div>
+              <div class="field">
+                <div class="switch-line">
+                  <div class="switch-text"><strong>Loja principal</strong><small>Define esta unidade como padrão.</small></div>
+                  <label class="switch"><input id="principal" type="checkbox"><span></span></label>
+                </div>
+              </div>
+              <div class="field">
+                <div class="switch-line">
+                  <div class="switch-text"><strong>Controla estoque</strong><small>Possui estoque próprio por filial.</small></div>
+                  <label class="switch"><input id="controla_estoque" type="checkbox" checked><span></span></label>
+                </div>
+              </div>
+              <div class="field">
+                <div class="switch-line">
+                  <div class="switch-text"><strong>Aceita pedidos</strong><small>Pode receber novos pedidos.</small></div>
+                  <label class="switch"><input id="aceita_pedidos" type="checkbox" checked><span></span></label>
+                </div>
+              </div>
+              <div class="field">
+                <div class="switch-line">
+                  <div class="switch-text"><strong>Permite retirada</strong><small>Cliente pode retirar na unidade.</small></div>
+                  <label class="switch"><input id="permite_retirada" type="checkbox" checked><span></span></label>
+                </div>
+              </div>
+              <div class="field">
+                <div class="switch-line">
+                  <div class="switch-text"><strong>Permite entrega</strong><small>Unidade realiza entregas.</small></div>
+                  <label class="switch"><input id="permite_entrega" type="checkbox" checked><span></span></label>
+                </div>
+              </div>
+              <div class="field full"><label>Observações</label><textarea id="observacoes" maxlength="1800"></textarea></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head"><div class="section-title">Horários de funcionamento</div></div>
+          <div class="section-body">
+            <div class="hours" id="hours"></div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-secondary" type="button" data-close="modalLoja">Cancelar</button>
+        <button class="btn btn-primary" type="submit" id="btnSalvar">Salvar loja</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="modalDetalhe">
+  <div class="modal-card small">
+    <div class="modal-head"><div><h2 id="detTitle">Detalhes da loja</h2><p id="detSub"></p></div><button class="close-btn" data-close="modalDetalhe">✕</button></div>
+    <div class="form-body" id="detBody"></div>
+    <div class="modal-foot"><button class="btn btn-secondary" data-close="modalDetalhe">Fechar</button></div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+const API="/api/lojas";
+let lojas=[],editandoId=null;
+const $=id=>document.getElementById(id);
+const dias=[
+  ["segunda","Segunda-feira"],["terca","Terça-feira"],["quarta","Quarta-feira"],
+  ["quinta","Quinta-feira"],["sexta","Sexta-feira"],["sabado","Sábado"],["domingo","Domingo"]
+];
+
+function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function toast(msg,tipo="success"){const el=document.createElement("div");el.className=`toast ${tipo}`;el.textContent=msg;$("toastWrap").appendChild(el);setTimeout(()=>el.remove(),3500)}
+async function req(url,opt={}){const r=await fetch(url,{credentials:"include",cache:"no-store",headers:{"Content-Type":"application/json",...(opt.headers||{})},...opt});let d={};try{d=await r.json()}catch{}if(r.status===401){window.top.location.href="/";throw new Error("Sessão expirada.")}if(!r.ok)throw new Error(d.error||"Erro na operação.");return d}
+function abrir(id){$(id).classList.add("show")}
+function fechar(id){$(id).classList.remove("show")}
+document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>fechar(b.dataset.close)));
+document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)fechar(m.id)}));
+document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".modal.show").forEach(m=>fechar(m.id))});
+
+function montarHoras(valores={}){
+  $("hours").innerHTML=dias.map(([key,label])=>{
+    const h=valores[key]||{};
+    return `<div class="hour-row">
+      <strong>${label}</strong>
+      <input type="time" id="${key}_abre" value="${esc(h.abre||"08:00")}">
+      <input type="time" id="${key}_fecha" value="${esc(h.fecha||"18:00")}">
+      <label class="closed"><input type="checkbox" id="${key}_fechado" ${h.fechado?"checked":""}> Fechado</label>
+    </div>`
+  }).join("")
+}
+
+function horasPayload(){
+  const obj={};
+  dias.forEach(([key])=>obj[key]={abre:$(`${key}_abre`).value||null,fecha:$(`${key}_fecha`).value||null,fechado:$(`${key}_fechado`).checked});
+  return obj
+}
+
+async function carregar(){
+  $("loading").classList.add("show");$("gridCards").style.display="none";$("empty").classList.remove("show");
+  try{const d=await req(API);lojas=d.items||[];montarEstados();render()}
+  catch(e){toast(e.message,"error");lojas=[];render()}
+  finally{$("loading").classList.remove("show")}
+}
+
+function montarEstados(){
+  const atual=$("filtroEstado").value;
+  const estados=[...new Set(lojas.map(x=>x.estado).filter(Boolean))].sort();
+  $("filtroEstado").innerHTML='<option value="">Todos os estados</option>'+estados.map(e=>`<option value="${esc(e)}">${esc(e)}</option>`).join("");
+  if(estados.includes(atual))$("filtroEstado").value=atual
+}
+
+function filtradas(){
+  const q=$("busca").value.trim().toLowerCase(),st=$("filtroStatus").value,pr=$("filtroPrincipal").value,uf=$("filtroEstado").value;
+  return lojas.filter(x=>{
+    const txt=[x.nome,x.codigo,x.razao_social,x.cnpj,x.cidade,x.estado,x.responsavel].filter(Boolean).join(" ").toLowerCase();
+    if(q&&!txt.includes(q))return false;
+    if(st==="ativo"&&!x.ativo)return false;
+    if(st==="inativo"&&x.ativo)return false;
+    if(pr==="principal"&&!x.principal)return false;
+    if(pr==="filial"&&x.principal)return false;
+    if(uf&&x.estado!==uf)return false;
+    return true
+  })
+}
+
+function render(){
+  const list=filtradas();
+  $("sTotal").textContent=list.length;
+  $("sAtivas").textContent=list.filter(x=>x.ativo).length;
+  $("sFiliais").textContent=list.filter(x=>!x.principal).length;
+  const p=list.find(x=>x.principal);$("sPrincipal").textContent=p?p.nome:"-";
+  if(!list.length){$("gridCards").style.display="none";$("empty").classList.add("show");return}
+  $("empty").classList.remove("show");$("gridCards").style.display="grid";
+  $("gridCards").innerHTML=list.map(x=>`
+    <div class="store-card ${x.principal?"main":""}">
+      <div class="store-top">
+        <div class="store-title">
+          <div class="store-icon"><svg viewBox="0 0 24 24"><path d="M4 10V4h16v6"/><path d="M3 10h18l-1 4a3 3 0 0 1-3 2 3 3 0 0 1-3-2 3 3 0 0 1-3 2 3 3 0 0 1-3-2 3 3 0 0 1-3 2 3 3 0 0 1-3-2l1-4Z"/><path d="M5 16v4h14v-4"/></svg></div>
+          <div style="min-width:0"><div class="store-name">${esc(x.nome)}</div><div class="store-code">${esc(x.codigo||"SEM CÓDIGO")}</div></div>
+        </div>
+        <span class="badge ${x.ativo?"badge-active":"badge-inactive"}">${x.ativo?"Ativa":"Inativa"}</span>
+      </div>
+      <div class="store-body">
+        <div class="info-line"><svg viewBox="0 0 24 24"><path d="M12 21s6-5 6-11a6 6 0 1 0-12 0c0 6 6 11 6 11Z"/><circle cx="12" cy="10" r="2"/></svg><span>${esc([x.logradouro,x.numero,x.bairro,x.cidade,x.estado].filter(Boolean).join(", ")||"Endereço não informado")}</span></div>
+        <div class="info-line"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="m4 6 8 6 8-6"/></svg><span>${esc(x.email||"E-mail não informado")}</span></div>
+        <div class="info-line"><svg viewBox="0 0 24 24"><path d="M6 2h4l2 5-3 2a15 15 0 0 0 6 6l2-3 5 2v4c0 2-2 4-4 4C9 22 2 15 2 6c0-2 2-4 4-4Z"/></svg><span>${esc(x.whatsapp||x.telefone||"Telefone não informado")}</span></div>
+        <div class="badges">
+          ${x.principal?'<span class="badge badge-main">Principal</span>':""}
+          ${x.controla_estoque?'<span class="badge badge-stock">Estoque próprio</span>':""}
+          ${x.aceita_pedidos?'<span class="badge badge-active">Aceita pedidos</span>':""}
+        </div>
+      </div>
+      <div class="store-actions">
+        <button class="btn btn-secondary" onclick="verLoja('${x.id}')">Ver</button>
+        <button class="btn btn-secondary" onclick="editarLoja('${x.id}')">Editar</button>
+        ${!x.principal?`<button class="btn btn-secondary" onclick="tornarPrincipal('${x.id}')">Tornar principal</button>`:""}
+        <button class="btn btn-danger" onclick="excluirLoja('${x.id}','${esc(x.nome).replace(/'/g,"&#039;")}')">Excluir</button>
+      </div>
+    </div>`).join("")
+}
+
+function novaLoja(){
+  editandoId=null;$("formLoja").reset();$("modalTitle").textContent="Nova loja";$("ativo").checked=true;$("controla_estoque").checked=true;$("aceita_pedidos").checked=true;$("permite_retirada").checked=true;$("permite_entrega").checked=true;$("pais").value="Brasil";montarHoras();abrir("modalLoja");setTimeout(()=>$("nome").focus(),80)
+}
+$("btnNovaLoja").addEventListener("click",novaLoja);
+
+function editarLoja(id){
+  const x=lojas.find(i=>i.id===id);if(!x)return;
+  editandoId=id;$("modalTitle").textContent="Editar loja";
+  ["nome","codigo","razao_social","cnpj","inscricao_estadual","responsavel","telefone","whatsapp","email","cep","logradouro","numero","complemento","bairro","cidade","estado","pais","observacoes"].forEach(k=>$(k).value=x[k]||"");
+  ["ativo","principal","controla_estoque","aceita_pedidos","permite_retirada","permite_entrega"].forEach(k=>$(k).checked=!!x[k]);
+  montarHoras(x.horarios||{});abrir("modalLoja")
+}
+
+async function salvar(e){
+  e.preventDefault();
+  const payload={
+    nome:$("nome").value.trim(),codigo:$("codigo").value.trim().toUpperCase(),razao_social:$("razao_social").value.trim()||null,
+    cnpj:$("cnpj").value.trim()||null,inscricao_estadual:$("inscricao_estadual").value.trim()||null,responsavel:$("responsavel").value.trim()||null,
+    telefone:$("telefone").value.trim()||null,whatsapp:$("whatsapp").value.trim()||null,email:$("email").value.trim().toLowerCase()||null,
+    cep:$("cep").value.trim()||null,logradouro:$("logradouro").value.trim()||null,numero:$("numero").value.trim()||null,
+    complemento:$("complemento").value.trim()||null,bairro:$("bairro").value.trim()||null,cidade:$("cidade").value.trim()||null,
+    estado:$("estado").value.trim().toUpperCase()||null,pais:$("pais").value.trim()||"Brasil",observacoes:$("observacoes").value.trim()||null,
+    ativo:$("ativo").checked,principal:$("principal").checked,controla_estoque:$("controla_estoque").checked,
+    aceita_pedidos:$("aceita_pedidos").checked,permite_retirada:$("permite_retirada").checked,permite_entrega:$("permite_entrega").checked,
+    horarios:horasPayload()
+  };
+  if(!payload.nome||!payload.codigo){toast("Informe nome e código da loja.","error");return}
+  const btn=$("btnSalvar");btn.disabled=true;btn.textContent="Salvando...";
+  try{
+    if(editandoId)await req(`${API}?id=${encodeURIComponent(editandoId)}`,{method:"PATCH",body:JSON.stringify(payload)});
+    else await req(API,{method:"POST",body:JSON.stringify(payload)});
+    toast(editandoId?"Loja atualizada.":"Loja cadastrada.");fechar("modalLoja");await carregar()
+  }catch(err){toast(err.message,"error")}
+  finally{btn.disabled=false;btn.textContent="Salvar loja"}
+}
+$("formLoja").addEventListener("submit",salvar);
+
+async function tornarPrincipal(id){
+  if(!confirm("Definir esta unidade como loja principal?"))return;
+  try{await req(`${API}?id=${encodeURIComponent(id)}&acao=principal`,{method:"PATCH",body:JSON.stringify({principal:true})});toast("Loja principal atualizada.");await carregar()}catch(e){toast(e.message,"error")}
+}
+
+async function excluirLoja(id,nome){
+  if(!confirm(`Excluir "${nome}"?\n\nA exclusão será lógica para preservar históricos.`))return;
+  try{await req(`${API}?id=${encodeURIComponent(id)}`,{method:"DELETE"});toast("Loja excluída.");await carregar()}catch(e){toast(e.message,"error")}
+}
+
+function verLoja(id){
+  const x=lojas.find(i=>i.id===id);if(!x)return;
+  $("detTitle").textContent=x.nome;$("detSub").textContent=x.codigo||"";
+  const hrs=x.horarios||{};
+  $("detBody").innerHTML=`
+    <div class="section"><div class="section-head"><div class="section-title">Dados</div></div><div class="section-body">
+      <div class="grid"><div><strong>Razão social</strong><div class="store-code">${esc(x.razao_social||"-")}</div></div><div><strong>CNPJ</strong><div class="store-code">${esc(x.cnpj||"-")}</div></div><div><strong>Responsável</strong><div class="store-code">${esc(x.responsavel||"-")}</div></div><div><strong>Status</strong><div class="store-code">${x.ativo?"Ativa":"Inativa"}</div></div></div>
+    </div></div>
+    <div class="section"><div class="section-head"><div class="section-title">Endereço</div></div><div class="section-body"><div style="font-size:11px;line-height:1.6">${esc([x.logradouro,x.numero,x.complemento,x.bairro,x.cidade,x.estado,x.cep].filter(Boolean).join(", ")||"-")}</div></div></div>
+    <div class="section"><div class="section-head"><div class="section-title">Horários</div></div><div class="section-body">
+      ${dias.map(([k,l])=>{const h=hrs[k]||{};return `<div class="info-line"><strong style="width:110px">${l}</strong><span>${h.fechado?"Fechado":`${esc(h.abre||"-")} às ${esc(h.fecha||"-")}`}</span></div>`}).join("")}
+    </div></div>
+    <div class="section"><div class="section-head"><div class="section-title">Configurações</div></div><div class="section-body"><div class="badges">
+      ${x.principal?'<span class="badge badge-main">Principal</span>':""}
+      ${x.controla_estoque?'<span class="badge badge-stock">Estoque próprio</span>':""}
+      ${x.aceita_pedidos?'<span class="badge badge-active">Aceita pedidos</span>':""}
+      ${x.permite_retirada?'<span class="badge badge-active">Retirada</span>':""}
+      ${x.permite_entrega?'<span class="badge badge-active">Entrega</span>':""}
+    </div></div></div>`;
+  abrir("modalDetalhe")
+}
+
+["busca","filtroStatus","filtroPrincipal","filtroEstado"].forEach(id=>$(id).addEventListener(id==="busca"?"input":"change",render));
+$("btnAtualizar").addEventListener("click",carregar);
+montarHoras();
+carregar();
+</script>
+</body>
+</html>
