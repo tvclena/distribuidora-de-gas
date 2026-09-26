@@ -343,6 +343,30 @@
       font-size:9px;font-weight:800;background:#eef8fe;color:#087fc2;border:1px solid #cfeaf9
     }
 
+
+    .store-stock-row{
+      margin-left:auto;
+      display:grid;
+      grid-template-columns:92px 92px;
+      gap:6px;
+      flex:0 0 auto;
+    }
+    .store-stock-row input{
+      width:92px;
+      height:32px;
+      border:1px solid var(--border);
+      border-radius:7px;
+      padding:0 8px;
+      font-size:10px;
+      text-align:right;
+      outline:0;
+      background:#fff;
+    }
+    .store-stock-row input:focus{
+      border-color:#4b9eca;
+      box-shadow:0 0 0 2px rgba(8,127,194,.08);
+    }
+
     @media(max-width:980px){
       .toolbar{grid-template-columns:1fr 1fr}
       .toolbar .search{grid-column:1/-1}
@@ -365,6 +389,9 @@
       .return-grid{grid-template-columns:1fr}
       .return-box,.return-hint{grid-column:auto}
       .stores-list{grid-template-columns:1fr}
+      .store-check{align-items:flex-start;flex-wrap:wrap}
+      .store-stock-row{grid-template-columns:1fr 1fr;width:100%;margin-left:26px}
+      .store-stock-row input{width:100%}
       .stores-box{grid-column:auto}
       .modal{padding:8px}
       .modal-card{max-height:calc(100vh - 16px);border-radius:13px}
@@ -546,23 +573,13 @@
               <input id="custo" inputmode="decimal" placeholder="0,00">
             </div>
 
-            <div class="field produto-only">
-              <label>Estoque atual</label>
-              <input id="estoque_atual" inputmode="decimal" placeholder="0">
-            </div>
-
-            <div class="field produto-only">
-              <label>Estoque mínimo</label>
-              <input id="estoque_minimo" inputmode="decimal" placeholder="0">
-            </div>
-
             <div class="stores-box produto-only" id="storesBox">
               <div class="stores-box-title">
-                <strong>Lojas onde este produto está disponível *</strong>
+                <strong>Lojas e estoque por filial *</strong>
                 <button type="button" id="btnMarcarTodasLojas">Marcar todas</button>
               </div>
               <div class="stores-box-sub">
-                Selecione uma ou mais filiais. O estoque será separado para cada loja.
+                Selecione uma ou mais filiais e informe o estoque atual e o estoque mínimo de cada uma.
               </div>
               <div class="stores-list" id="lojasLista">
                 <div class="muted">Carregando lojas...</div>
@@ -749,20 +766,82 @@
         return;
       }
 
-      $("lojasLista").innerHTML=lojas.map(l=>`
-        <label class="store-check">
-          <input
-            type="checkbox"
-            class="loja-check-input"
-            value="${l.id}"
-            ${set.has(l.id) ? "checked" : ""}
-          >
-          <span class="store-check-text">
-            <strong>${escapeHtml(l.nome)}</strong>
-            <small>${escapeHtml([l.cidade,l.estado].filter(Boolean).join(" / ") || l.codigo || "")}${l.principal ? " • Principal" : ""}</small>
-          </span>
-        </label>
-      `).join("");
+      const produtoAtual=editandoId ? registros.find(x=>x.id===editandoId) : null;
+
+      $("lojasLista").innerHTML=lojas.map(l=>{
+        const marcado=set.has(l.id);
+        const infoLoja=produtoAtual?.lojas?.find(x=>x.id===l.id);
+        const saldo=Number(infoLoja?.estoque_atual||0);
+        const minimo=Number(infoLoja?.estoque_minimo||0);
+
+        return `
+          <div class="store-check">
+            <input
+              type="checkbox"
+              class="loja-check-input"
+              value="${l.id}"
+              ${marcado ? "checked" : ""}
+              onchange="alternarCamposLoja('${l.id}',this.checked)"
+            >
+            <span class="store-check-text">
+              <strong>${escapeHtml(l.nome)}</strong>
+              <small>${escapeHtml([l.cidade,l.estado].filter(Boolean).join(" / ") || l.codigo || "")}${l.principal ? " • Principal" : ""}</small>
+            </span>
+            <div class="store-stock-row">
+              <input
+                class="loja-estoque-atual"
+                data-loja="${l.id}"
+                inputmode="decimal"
+                placeholder="Estoque"
+                value="${marcado ? String(saldo).replace(".",",") : ""}"
+                ${marcado ? "" : "disabled"}
+                title="Estoque atual"
+              >
+              <input
+                class="loja-estoque-minimo"
+                data-loja="${l.id}"
+                inputmode="decimal"
+                placeholder="Mínimo"
+                value="${marcado ? String(minimo).replace(".",",") : ""}"
+                ${marcado ? "" : "disabled"}
+                title="Estoque mínimo"
+              >
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+
+    function alternarCamposLoja(lojaId,ativo){
+      const atual=document.querySelector(`.loja-estoque-atual[data-loja="${lojaId}"]`);
+      const minimo=document.querySelector(`.loja-estoque-minimo[data-loja="${lojaId}"]`);
+
+      if(atual){
+        atual.disabled=!ativo;
+        if(!ativo) atual.value="";
+        else if(!atual.value) atual.value="0";
+      }
+
+      if(minimo){
+        minimo.disabled=!ativo;
+        if(!ativo) minimo.value="";
+        else if(!minimo.value) minimo.value="0";
+      }
+    }
+
+    function estoquesPorLoja(){
+      return [...document.querySelectorAll(".loja-check-input:checked")].map(chk=>{
+        const lojaId=chk.value;
+        const atual=document.querySelector(`.loja-estoque-atual[data-loja="${lojaId}"]`);
+        const minimo=document.querySelector(`.loja-estoque-minimo[data-loja="${lojaId}"]`);
+
+        return {
+          loja_id:lojaId,
+          estoque_atual:parseNumero(atual?.value||0),
+          estoque_minimo:parseNumero(minimo?.value||0)
+        };
+      });
     }
 
     function montarFiltroLojas(){
@@ -943,8 +1022,6 @@
       $("sku").value=x.sku||"";
       $("preco_venda").value=String(Number(x.preco_venda||0)).replace(".",",");
       $("custo").value=String(Number(x.custo||0)).replace(".",",");
-      $("estoque_atual").value=String(Number(x.estoque_atual||0)).replace(".",",");
-      $("estoque_minimo").value=String(Number(x.estoque_minimo||0)).replace(".",",");
       $("imagem_url").value=x.imagem_url||"";
       $("descricao").value=x.descricao||"";
       $("ativo").checked=!!x.ativo;
@@ -1000,8 +1077,6 @@
         sku:$("sku").value.trim()||null,
         preco_venda:parseNumero($("preco_venda").value),
         custo:parseNumero($("custo").value),
-        estoque_atual:$("tipo").value==="produto"?parseNumero($("estoque_atual").value):0,
-        estoque_minimo:$("tipo").value==="produto"?parseNumero($("estoque_minimo").value):0,
         imagem_url:$("imagem_url").value.trim()||null,
         descricao:$("descricao").value.trim()||null,
         ativo:$("ativo").checked,
@@ -1018,6 +1093,10 @@
         lojas_ids:
           $("tipo").value==="produto"
             ? lojasSelecionadas()
+            : [],
+        estoques_lojas:
+          $("tipo").value==="produto"
+            ? estoquesPorLoja()
             : []
       };
 
@@ -1028,6 +1107,14 @@
 
       if(payload.tipo==="produto" && !payload.lojas_ids.length){
         toast("Selecione pelo menos uma loja para este produto.","error");
+        return;
+      }
+
+      if(
+        payload.tipo==="produto" &&
+        payload.estoques_lojas.some(x=>x.estoque_atual<0 || x.estoque_minimo<0)
+      ){
+        toast("Os valores de estoque não podem ser negativos.","error");
         return;
       }
 
@@ -1089,7 +1176,10 @@
     $("btnMarcarTodasLojas").addEventListener("click",()=>{
       const checks=[...document.querySelectorAll(".loja-check-input")];
       const todas=checks.length && checks.every(c=>c.checked);
-      checks.forEach(c=>c.checked=!todas);
+      checks.forEach(c=>{
+        c.checked=!todas;
+        alternarCamposLoja(c.value,c.checked);
+      });
       $("btnMarcarTodasLojas").textContent=todas?"Marcar todas":"Desmarcar todas";
     });
 
