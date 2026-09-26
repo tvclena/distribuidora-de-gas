@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#166f9f">
+<title>Entrada de Estoque</title>
+<style>
+:root{--blue:#166f9f;--dark:#0e5d8a;--active:#087fc2;--bg:#e9edf1;--border:#d8dee4;--text:#263238;--muted:#75828a;--success:#1f8b57;--danger:#c53f3f;--shadow:0 2px 10px rgba(24,48,66,.09)}
+*{box-sizing:border-box;margin:0;padding:0}html,body{min-height:100%;font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--text)}body{padding:14px}button,input,select,textarea{font:inherit}
+.page{max-width:1550px;margin:auto}.header{display:flex;justify-content:space-between;gap:15px;align-items:flex-start;margin-bottom:14px}.header h1{font-size:22px}.header p{margin-top:5px;font-size:12px;color:var(--muted)}
+.btn{height:40px;border-radius:9px;border:0;padding:0 14px;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:12px;font-weight:800;cursor:pointer}.btn-primary{background:linear-gradient(135deg,var(--dark),var(--active));color:#fff}.btn-secondary{background:#fff;border:1px solid var(--border);color:#3c4c55}.btn:disabled{opacity:.55;cursor:not-allowed}
+.card{background:#fff;border:1px solid var(--border);box-shadow:var(--shadow);margin-bottom:12px}.card-head{padding:12px 14px;background:#f7f9fa;border-bottom:1px solid var(--border);font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.055em;color:#5f6d75}.card-body{padding:13px 14px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.span2{grid-column:span 2}.full{grid-column:1/-1}.field label{display:block;font-size:10px;font-weight:800;color:#5e6c75;margin:0 0 6px 2px}.field input,.field select,.field textarea{width:100%;border:1px solid var(--border);border-radius:8px;outline:0;background:#fff;color:#2f404a;padding:0 10px;font-size:12px}.field input,.field select{height:40px}.field textarea{min-height:78px;padding-top:10px;resize:vertical}.field input:focus,.field select:focus,.field textarea:focus{border-color:#4b9eca;box-shadow:0 0 0 3px rgba(8,127,194,.08)}
+.add-grid{display:grid;grid-template-columns:minmax(240px,1.6fr) 120px 130px 130px 130px auto;gap:8px;align-items:end}.product-search{position:relative}.product-menu{display:none;position:absolute;left:0;right:0;top:64px;z-index:40;max-height:260px;overflow:auto;background:#fff;border:1px solid var(--border);border-radius:9px;box-shadow:0 12px 28px rgba(20,48,65,.16)}.product-menu.show{display:block}.product-option{padding:10px;border-bottom:1px solid #edf1f3;cursor:pointer}.product-option:hover{background:#f5f9fb}.product-option strong{display:block;font-size:11px}.product-option small{display:block;margin-top:3px;font-size:9px;color:#89959d}
+.table-wrap{overflow:auto;border:1px solid #e2e8ec;margin-top:12px}table{width:100%;border-collapse:collapse;min-width:900px}th{background:#f8fafb;color:#66747d;text-transform:uppercase;font-size:9px;letter-spacing:.05em;text-align:left;padding:10px;border-bottom:1px solid var(--border)}td{padding:9px 10px;border-bottom:1px solid #edf1f3;font-size:11px}.item-name{font-weight:850}.meta{font-size:9px;color:#89959d;margin-top:2px}.money{font-weight:850}.icon{width:31px;height:31px;border-radius:8px;border:1px solid var(--border);background:#fff;cursor:pointer}.icon:hover{color:var(--danger);border-color:#ffd0d0;background:#fff3f3}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}.stat{background:#fff;border:1px solid var(--border);padding:13px;box-shadow:var(--shadow)}.stat small{display:block;font-size:9px;color:#83909a;text-transform:uppercase;font-weight:850}.stat strong{display:block;margin-top:5px;font-size:18px}
+.footer-actions{display:flex;justify-content:flex-end;gap:8px}.toast-wrap{position:fixed;right:18px;bottom:18px;z-index:9999;width:min(360px,calc(100vw - 36px))}.toast{padding:12px;background:#fff;border:1px solid var(--border);border-left:4px solid var(--success);border-radius:9px;box-shadow:0 12px 30px rgba(0,0,0,.15);font-size:11px}.toast.error{border-left-color:var(--danger)}
+.history{background:#fff;border:1px solid var(--border);box-shadow:var(--shadow)}.history-head{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border)}.history-head strong{font-size:13px}.history-filters{display:flex;gap:7px;flex-wrap:wrap}.history-filters select,.history-filters input{height:35px;border:1px solid var(--border);border-radius:7px;padding:0 9px;font-size:10px}
+.badge{display:inline-flex;align-items:center;min-height:22px;padding:0 7px;border-radius:999px;font-size:9px;font-weight:850;background:#edf9f3;color:#1f8b57;border:1px solid #d1efdf}
+@media(max-width:1100px){.grid{grid-template-columns:repeat(2,1fr)}.add-grid{grid-template-columns:1fr 1fr 1fr}.product-search{grid-column:1/-1}.summary{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:650px){body{padding:8px}.header h1{font-size:19px}.header p{display:none}.grid,.add-grid{grid-template-columns:1fr}.span2,.full,.product-search{grid-column:auto}.summary{gap:7px}.history-head{align-items:flex-start;flex-direction:column}.footer-actions{flex-direction:column}.footer-actions .btn{width:100%}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div><h1>Entrada de Estoque</h1><p>Registre mercadorias recebidas separadamente por loja / filial.</p></div>
+    <button class="btn btn-secondary" id="btnLimpar">Nova entrada</button>
+  </div>
+
+  <div class="summary">
+    <div class="stat"><small>Itens nesta entrada</small><strong id="sItens">0</strong></div>
+    <div class="stat"><small>Quantidade total</small><strong id="sQtd">0</strong></div>
+    <div class="stat"><small>Valor da entrada</small><strong id="sValor">R$ 0,00</strong></div>
+    <div class="stat"><small>Loja</small><strong id="sLoja" style="font-size:13px">Não selecionada</strong></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">Dados da entrada</div>
+    <div class="card-body">
+      <div class="grid">
+        <div class="field span2"><label>Loja / filial *</label><select id="loja_id"><option value="">Selecione a loja</option></select></div>
+        <div class="field span2"><label>Fornecedor</label><select id="fornecedor_id"><option value="">Sem fornecedor</option></select></div>
+        <div class="field"><label>Data da entrada *</label><input id="data_entrada" type="datetime-local"></div>
+        <div class="field"><label>Documento / NF</label><input id="documento" placeholder="Número da nota ou documento"></div>
+        <div class="field"><label>Série</label><input id="serie" placeholder="Ex.: 1"></div>
+        <div class="field"><label>Chave / referência</label><input id="referencia" placeholder="Chave, pedido de compra..."></div>
+        <div class="field full"><label>Observações</label><textarea id="observacoes" placeholder="Informações sobre a entrada..."></textarea></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">Produtos recebidos</div>
+    <div class="card-body">
+      <div class="add-grid">
+        <div class="field product-search">
+          <label>Produto *</label>
+          <input id="produtoBusca" autocomplete="off" placeholder="Digite nome, código ou SKU">
+          <div class="product-menu" id="produtoMenu"></div>
+        </div>
+        <div class="field"><label>Quantidade</label><input id="qtd" inputmode="decimal" value="1"></div>
+        <div class="field"><label>Custo unitário</label><input id="custo" inputmode="decimal" placeholder="0,00"></div>
+        <div class="field"><label>Lote</label><input id="lote" placeholder="Opcional"></div>
+        <div class="field"><label>Validade</label><input id="validade" type="date"></div>
+        <button class="btn btn-secondary" id="btnAdicionar" type="button">Adicionar</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Produto</th><th>Qtd.</th><th>Custo</th><th>Lote</th><th>Validade</th><th>Total</th><th></th></tr></thead>
+          <tbody id="itensBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body footer-actions">
+      <button class="btn btn-secondary" id="btnLimpar2" type="button">Limpar</button>
+      <button class="btn btn-primary" id="btnConfirmar" type="button">Confirmar entrada no estoque</button>
+    </div>
+  </div>
+
+  <div class="history">
+    <div class="history-head">
+      <strong>Últimas entradas</strong>
+      <div class="history-filters">
+        <select id="hLoja"><option value="">Todas as lojas</option></select>
+        <input id="hData" type="date">
+        <button class="btn btn-secondary" id="btnAtualizar" style="height:35px">Atualizar</button>
+      </div>
+    </div>
+    <div class="table-wrap" style="border:0;margin:0">
+      <table>
+        <thead><tr><th>Data</th><th>Loja</th><th>Documento</th><th>Fornecedor</th><th>Itens</th><th>Quantidade</th><th>Valor</th><th>Status</th></tr></thead>
+        <tbody id="historicoBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+const API="/api/entradas-estoque";
+const API_LOJAS="/api/lojas";
+const API_PRODUTOS="/api/produtos-servicos";
+const API_PESSOAS="/api/clientes-fornecedores";
+
+let lojas=[],produtos=[],fornecedores=[],itens=[],produtoSelecionado=null,historico=[];
+const $=id=>document.getElementById(id);
+const money=new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"});
+const num=new Intl.NumberFormat("pt-BR",{maximumFractionDigits:3});
+
+function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function parseNum(v){if(v===null||v===undefined||v==="")return 0;let s=String(v).trim().replace(/\s/g,"");if(s.includes(",")&&s.includes("."))s=s.replace(/\./g,"").replace(",",".");else if(s.includes(","))s=s.replace(",",".");const n=Number(s);return Number.isFinite(n)?n:0}
+function isoLocal(){const d=new Date(),z=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}`}
+function toast(msg,t="success"){const e=document.createElement("div");e.className=`toast ${t}`;e.textContent=msg;$("toastWrap").appendChild(e);setTimeout(()=>e.remove(),3500)}
+async function req(url,opt={}){const r=await fetch(url,{credentials:"include",cache:"no-store",headers:{"Content-Type":"application/json",...(opt.headers||{})},...opt});let d={};try{d=await r.json()}catch{}if(r.status===401){window.top.location.href="/";throw new Error("Sessão expirada.")}if(!r.ok)throw new Error(d.error||"Erro na operação.");return d}
+
+async function bases(){
+  const [l,p,f]=await Promise.all([req(API_LOJAS),req(API_PRODUTOS),req(API_PESSOAS)]);
+  lojas=(l.items||[]).filter(x=>x.ativo!==false);
+  produtos=(p.items||[]).filter(x=>x.ativo!==false&&x.tipo==="produto"&&x.controla_estoque!==false);
+  fornecedores=(f.items||[]).filter(x=>x.ativo!==false&&(x.tipo==="fornecedor"||x.tipo==="ambos"));
+
+  $("loja_id").innerHTML='<option value="">Selecione a loja</option>'+lojas.map(x=>`<option value="${x.id}">${esc(x.nome)}${x.principal?" • Principal":""}</option>`).join("");
+  $("hLoja").innerHTML='<option value="">Todas as lojas</option>'+lojas.map(x=>`<option value="${x.id}">${esc(x.nome)}</option>`).join("");
+  $("fornecedor_id").innerHTML='<option value="">Sem fornecedor</option>'+fornecedores.map(x=>`<option value="${x.id}">${esc(x.nome_fantasia||x.nome)}</option>`).join("");
+
+  const principal=lojas.find(x=>x.principal);
+  if(principal)$("loja_id").value=principal.id;
+  atualizaResumo();
+}
+
+function produtosDaLoja(){
+  const loja=$("loja_id").value;
+  if(!loja)return [];
+  return produtos.filter(p=>(p.lojas_ids||[]).includes(loja));
+}
+
+$("produtoBusca").addEventListener("input",()=>{
+  const q=$("produtoBusca").value.trim().toLowerCase();
+  produtoSelecionado=null;
+  if(!$("loja_id").value){toast("Selecione primeiro a loja.","error");$("produtoBusca").value="";return}
+  if(!q){$("produtoMenu").classList.remove("show");return}
+  const list=produtosDaLoja().filter(x=>[x.nome,x.codigo,x.sku,x.categoria].filter(Boolean).join(" ").toLowerCase().includes(q)).slice(0,15);
+  $("produtoMenu").innerHTML=list.map(x=>{
+    const saldo=(x.lojas||[]).find(l=>l.id===$("loja_id").value)?.estoque_atual||0;
+    return `<div class="product-option" data-id="${x.id}"><strong>${esc(x.nome)}</strong><small>${esc(x.sku||x.codigo||"Sem código")} • saldo atual: ${num.format(Number(saldo))} ${esc(x.unidade||"UN")}</small></div>`
+  }).join("")||'<div class="product-option"><small>Nenhum produto disponível nesta loja.</small></div>';
+  $("produtoMenu").classList.add("show");
+  $("produtoMenu").querySelectorAll("[data-id]").forEach(el=>el.onclick=()=>{
+    produtoSelecionado=produtos.find(x=>x.id===el.dataset.id);
+    $("produtoBusca").value=produtoSelecionado.nome;
+    $("custo").value=Number(produtoSelecionado.custo||0).toFixed(2).replace(".",",");
+    $("produtoMenu").classList.remove("show");
+  })
+});
+document.addEventListener("click",e=>{if(!e.target.closest(".product-search"))$("produtoMenu").classList.remove("show")});
+
+$("btnAdicionar").onclick=()=>{
+  if(!produtoSelecionado){toast("Selecione o produto.","error");return}
+  const qtd=parseNum($("qtd").value),custo=parseNum($("custo").value);
+  if(qtd<=0){toast("Quantidade inválida.","error");return}
+  itens.push({
+    produto_id:produtoSelecionado.id,
+    nome:produtoSelecionado.nome,
+    codigo:produtoSelecionado.codigo,
+    sku:produtoSelecionado.sku,
+    unidade:produtoSelecionado.unidade||"UN",
+    quantidade:qtd,
+    custo_unitario:custo,
+    lote:$("lote").value.trim()||null,
+    validade:$("validade").value||null
+  });
+  produtoSelecionado=null;$("produtoBusca").value="";$("qtd").value="1";$("custo").value="";$("lote").value="";$("validade").value="";
+  renderItens()
+};
+
+function renderItens(){
+  $("itensBody").innerHTML=itens.length?itens.map((x,i)=>`<tr>
+    <td><div class="item-name">${esc(x.nome)}</div><div class="meta">${esc(x.sku||x.codigo||"")}</div></td>
+    <td>${num.format(x.quantidade)} ${esc(x.unidade)}</td>
+    <td>${money.format(x.custo_unitario)}</td>
+    <td>${esc(x.lote||"-")}</td>
+    <td>${x.validade?new Date(x.validade+"T12:00:00").toLocaleDateString("pt-BR"):"-"}</td>
+    <td class="money">${money.format(x.quantidade*x.custo_unitario)}</td>
+    <td><button class="icon" onclick="remover(${i})">✕</button></td>
+  </tr>`).join(""):'<tr><td colspan="7" style="padding:25px;text-align:center;color:#89959d">Nenhum produto adicionado.</td></tr>';
+  atualizaResumo()
+}
+function remover(i){itens.splice(i,1);renderItens()}
+function atualizaResumo(){
+  $("sItens").textContent=itens.length;
+  $("sQtd").textContent=num.format(itens.reduce((a,x)=>a+x.quantidade,0));
+  $("sValor").textContent=money.format(itens.reduce((a,x)=>a+x.quantidade*x.custo_unitario,0));
+  $("sLoja").textContent=lojas.find(x=>x.id===$("loja_id").value)?.nome||"Não selecionada"
+}
+$("loja_id").addEventListener("change",()=>{produtoSelecionado=null;$("produtoBusca").value="";atualizaResumo()});
+
+async function confirmar(){
+  if(!$("loja_id").value){toast("Selecione a loja.","error");return}
+  if(!itens.length){toast("Adicione pelo menos um produto.","error");return}
+  const btn=$("btnConfirmar");btn.disabled=true;btn.textContent="Registrando...";
+  try{
+    const d=await req(API,{method:"POST",body:JSON.stringify({
+      loja_id:$("loja_id").value,
+      fornecedor_id:$("fornecedor_id").value||null,
+      data_entrada:$("data_entrada").value?new Date($("data_entrada").value).toISOString():new Date().toISOString(),
+      documento:$("documento").value.trim()||null,
+      serie:$("serie").value.trim()||null,
+      referencia:$("referencia").value.trim()||null,
+      observacoes:$("observacoes").value.trim()||null,
+      itens:itens.map(x=>({
+        produto_id:x.produto_id,
+        quantidade:x.quantidade,
+        custo_unitario:x.custo_unitario,
+        lote:x.lote,
+        validade:x.validade
+      }))
+    })});
+    toast(`Entrada ${d.item?.numero ? "#"+d.item.numero+" " : ""}registrada com sucesso.`);
+    limpar();
+    await Promise.all([bases(),carregarHistorico()]);
+  }catch(e){toast(e.message,"error")}
+  finally{btn.disabled=false;btn.textContent="Confirmar entrada no estoque"}
+}
+$("btnConfirmar").onclick=confirmar;
+
+function limpar(){
+  itens=[];produtoSelecionado=null;$("produtoBusca").value="";$("qtd").value="1";$("custo").value="";$("lote").value="";$("validade").value="";
+  $("fornecedor_id").value="";$("documento").value="";$("serie").value="";$("referencia").value="";$("observacoes").value="";$("data_entrada").value=isoLocal();
+  renderItens()
+}
+$("btnLimpar").onclick=limpar;$("btnLimpar2").onclick=limpar;
+
+async function carregarHistorico(){
+  try{
+    const d=await req(API);historico=d.items||[];renderHistorico()
+  }catch(e){toast(e.message,"error")}
+}
+function renderHistorico(){
+  const loja=$("hLoja").value,dt=$("hData").value;
+  const list=historico.filter(x=>(!loja||x.loja_id===loja)&&(!dt||String(x.data_entrada).slice(0,10)===dt));
+  $("historicoBody").innerHTML=list.length?list.map(x=>`<tr>
+    <td>${new Date(x.data_entrada).toLocaleString("pt-BR")}</td>
+    <td>${esc(x.loja_nome||"-")}</td>
+    <td>${esc(x.documento||"-")}</td>
+    <td>${esc(x.fornecedor_nome||"-")}</td>
+    <td>${x.total_itens||0}</td>
+    <td>${num.format(Number(x.quantidade_total||0))}</td>
+    <td class="money">${money.format(Number(x.valor_total||0))}</td>
+    <td><span class="badge">Confirmada</span></td>
+  </tr>`).join(""):'<tr><td colspan="8" style="padding:25px;text-align:center;color:#89959d">Nenhuma entrada encontrada.</td></tr>'
+}
+$("hLoja").onchange=renderHistorico;$("hData").onchange=renderHistorico;$("btnAtualizar").onclick=carregarHistorico;
+
+(async()=>{$("data_entrada").value=isoLocal();renderItens();await bases();await carregarHistorico()})()
+</script>
+</body>
+</html>
