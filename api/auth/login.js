@@ -1,11 +1,13 @@
 import {
-  allowOnly,
-  clearSessionCookies,
-  noCache,
-  publicUser,
-  setSessionCookies,
-  supabasePublic
+  allowOnly, clearSessionCookies, noCache, publicUser,
+  setSessionCookies, supabasePublic
 } from "./_shared.js";
+
+function emailAutorizado(email) {
+  const lista = String(process.env.EMAILS_AUTORIZADOS || "")
+    .split(",").map(v => v.trim().toLowerCase()).filter(Boolean);
+  return lista.includes(String(email || "").trim().toLowerCase());
+}
 
 export default async function handler(req, res) {
   noCache(res);
@@ -17,50 +19,33 @@ export default async function handler(req, res) {
 
     if (!email || !password) {
       clearSessionCookies(res);
-      return res.status(400).json({
-        ok: false,
-        error: "Informe o e-mail e a senha."
-      });
+      return res.status(400).json({ ok:false, error:"Informe o e-mail e a senha." });
     }
 
-    if (email.length > 320 || password.length > 1000) {
+    if (!emailAutorizado(email)) {
       clearSessionCookies(res);
-      return res.status(400).json({
-        ok: false,
-        error: "Dados de login inválidos."
-      });
+      return res.status(403).json({ ok:false, error:"Este e-mail não está autorizado a acessar o sistema." });
     }
 
     const supabase = supabasePublic();
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error || !data?.session || !data?.user) {
       clearSessionCookies(res);
+      return res.status(401).json({ ok:false, error:"E-mail ou senha inválidos." });
+    }
 
-      // Não devolvemos detalhes internos do Supabase para o front.
-      return res.status(401).json({
-        ok: false,
-        error: "E-mail ou senha inválidos."
-      });
+    if (!emailAutorizado(data.user.email)) {
+      clearSessionCookies(res);
+      return res.status(403).json({ ok:false, error:"Este e-mail não está autorizado a acessar o sistema." });
     }
 
     setSessionCookies(res, data.session);
+    return res.status(200).json({ ok:true, user:publicUser(data.user) });
 
-    return res.status(200).json({
-      ok: true,
-      user: publicUser(data.user)
-    });
   } catch (error) {
     console.error("LOGIN_ERROR", error);
-
     clearSessionCookies(res);
-    return res.status(500).json({
-      ok: false,
-      error: "Não foi possível realizar o login."
-    });
+    return res.status(500).json({ ok:false, error:"Não foi possível realizar o login." });
   }
 }
