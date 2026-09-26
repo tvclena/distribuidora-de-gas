@@ -259,6 +259,44 @@
     .toast.error{border-left-color:var(--danger)}
     .toast.success{border-left-color:var(--success)}
 
+
+    .return-box{
+      grid-column:1/-1;
+      display:none;
+      padding:12px;
+      border:1px solid #d9e4ea;
+      border-radius:10px;
+      background:#f8fbfd;
+    }
+    .return-box.show{display:block}
+    .return-box-title{
+      font-size:11px;
+      font-weight:850;
+      color:#34454f;
+      margin-bottom:4px;
+    }
+    .return-box-sub{
+      font-size:9px;
+      color:#88959d;
+      margin-bottom:10px;
+      line-height:1.45;
+    }
+    .return-grid{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) 160px;
+      gap:10px;
+    }
+    .return-hint{
+      grid-column:1/-1;
+      padding:9px 10px;
+      border-radius:8px;
+      background:#eef8fe;
+      border:1px solid #d4ebf7;
+      color:#4a6f84;
+      font-size:9px;
+      line-height:1.45;
+    }
+
     @media(max-width:980px){
       .toolbar{grid-template-columns:1fr 1fr}
       .toolbar .search{grid-column:1/-1}
@@ -278,6 +316,8 @@
       .stat strong{font-size:17px}
       .form-grid{grid-template-columns:1fr}
       .field.full{grid-column:auto}
+      .return-grid{grid-template-columns:1fr}
+      .return-box,.return-hint{grid-column:auto}
       .modal{padding:8px}
       .modal-card{max-height:calc(100vh - 16px);border-radius:13px}
       .modal-head,.form-body,.modal-foot{padding-left:13px;padding-right:13px}
@@ -509,6 +549,45 @@
               </div>
             </div>
 
+            <div class="field produto-only">
+              <div class="switch-line">
+                <div class="switch-text">
+                  <strong>Gera retorno / estorno</strong>
+                  <small>Ao entregar este produto, outro item entra no estoque.</small>
+                </div>
+                <label class="switch">
+                  <input id="gera_retorno" type="checkbox">
+                  <span></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="return-box produto-only" id="returnBox">
+              <div class="return-box-title">Produto que deve retornar ao estoque</div>
+              <div class="return-box-sub">
+                Exemplo: ao entregar “Botijão P13 cheio”, retorna “Botijão P13 vazio”.
+              </div>
+
+              <div class="return-grid">
+                <div class="field">
+                  <label>Produto de retorno *</label>
+                  <select id="produto_retorno_id">
+                    <option value="">Selecione o produto</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label>Fator de retorno *</label>
+                  <input id="fator_retorno" inputmode="decimal" value="1">
+                </div>
+
+                <div class="return-hint">
+                  Se o fator for 1, vender 3 unidades gera retorno de 3 unidades do produto selecionado.
+                  Se for 2, vender 3 gera retorno de 6.
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -561,6 +640,35 @@
       return partes.slice(0,2).map(p=>p[0]).join("").toUpperCase();
     }
 
+
+    function montarProdutosRetorno(){
+      const atual=$("produto_retorno_id")?.value||"";
+      const editId=editandoId;
+
+      const opcoes=registros
+        .filter(x=>x.tipo==="produto" && x.ativo!==false && x.id!==editId)
+        .sort((a,b)=>String(a.nome||"").localeCompare(String(b.nome||""),"pt-BR"));
+
+      $("produto_retorno_id").innerHTML=
+        '<option value="">Selecione o produto</option>'+
+        opcoes.map(x=>`<option value="${x.id}">${escapeHtml(x.nome)}${x.sku?` • ${escapeHtml(x.sku)}`:""}</option>`).join("");
+
+      if(opcoes.some(x=>x.id===atual)){
+        $("produto_retorno_id").value=atual;
+      }
+    }
+
+    function atualizarRetorno(){
+      const produto=$("tipo").value==="produto";
+      const gera=produto && $("gera_retorno").checked;
+      $("returnBox").classList.toggle("show",gera);
+
+      if(!gera){
+        $("produto_retorno_id").value="";
+        $("fator_retorno").value="1";
+      }
+    }
+
     async function request(url,options={}){
       const r=await fetch(url,{
         credentials:"include",
@@ -587,6 +695,7 @@
         const data=await request(API);
         registros=Array.isArray(data.items)?data.items:[];
         montarCategorias();
+        montarProdutosRetorno();
         render();
       }catch(e){
         toast(e.message,"error");
@@ -690,7 +799,12 @@
       $("unidade").value="UN";
       $("ativo").checked=true;
       $("controla_estoque").checked=true;
+      $("gera_retorno").checked=false;
+      $("produto_retorno_id").value="";
+      $("fator_retorno").value="1";
+      montarProdutosRetorno();
       atualizarCamposTipo();
+      atualizarRetorno();
       atualizarPreview();
       $("modal").classList.add("show");
       setTimeout(()=>$("nome").focus(),80);
@@ -715,7 +829,12 @@
       $("descricao").value=x.descricao||"";
       $("ativo").checked=!!x.ativo;
       $("controla_estoque").checked=!!x.controla_estoque;
+      $("gera_retorno").checked=!!x.gera_retorno;
+      montarProdutosRetorno();
+      $("produto_retorno_id").value=x.produto_retorno_id||"";
+      $("fator_retorno").value=String(Number(x.fator_retorno||1)).replace(".",",");
       atualizarCamposTipo();
+      atualizarRetorno();
       atualizarPreview();
       $("modal").classList.add("show");
     }
@@ -730,9 +849,12 @@
       if(!produto){
         $("unidade").value="SERV";
         $("controla_estoque").checked=false;
+        $("gera_retorno").checked=false;
       }else if($("unidade").value==="SERV"){
         $("unidade").value="UN";
       }
+
+      atualizarRetorno();
     }
 
     function atualizarPreview(){
@@ -762,11 +884,30 @@
         imagem_url:$("imagem_url").value.trim()||null,
         descricao:$("descricao").value.trim()||null,
         ativo:$("ativo").checked,
-        controla_estoque:$("tipo").value==="produto"?$("controla_estoque").checked:false
+        controla_estoque:$("tipo").value==="produto"?$("controla_estoque").checked:false,
+        gera_retorno:$("tipo").value==="produto"?$("gera_retorno").checked:false,
+        produto_retorno_id:
+          $("tipo").value==="produto" && $("gera_retorno").checked
+            ? ($("produto_retorno_id").value||null)
+            : null,
+        fator_retorno:
+          $("tipo").value==="produto" && $("gera_retorno").checked
+            ? parseNumero($("fator_retorno").value||1)
+            : 1
       };
 
       if(!payload.nome){
         toast("Informe o nome.","error");
+        return;
+      }
+
+      if(payload.gera_retorno && !payload.produto_retorno_id){
+        toast("Selecione qual produto deve retornar ao estoque.","error");
+        return;
+      }
+
+      if(payload.gera_retorno && payload.fator_retorno<=0){
+        toast("O fator de retorno deve ser maior que zero.","error");
         return;
       }
 
@@ -811,6 +952,7 @@
     $("btnCancelar").addEventListener("click",fechar);
     $("formCadastro").addEventListener("submit",salvar);
     $("tipo").addEventListener("change",atualizarCamposTipo);
+    $("gera_retorno").addEventListener("change",atualizarRetorno);
     $("imagem_url").addEventListener("input",atualizarPreview);
     $("btnAtualizar").addEventListener("click",carregar);
 
