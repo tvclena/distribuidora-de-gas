@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#166f9f">
+  <title>Clientes e Fornecedores</title>
+
+  <style>
+    :root{
+      --blue:#166f9f;
+      --blue-dark:#0e5d8a;
+      --blue-soft:#eef8fe;
+      --active:#087fc2;
+      --bg:#e9edf1;
+      --panel:#fff;
+      --border:#d8dee4;
+      --text:#263238;
+      --muted:#6f7a83;
+      --danger:#c53f3f;
+      --success:#1f8b57;
+      --purple:#7652bd;
+      --shadow:0 2px 10px rgba(24,48,66,.09);
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{width:100%;min-height:100%;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    body{padding:14px}
+    button,input,select,textarea{font:inherit}
+
+    .page{max-width:1500px;margin:0 auto}
+
+    .header{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px
+    }
+    .header-left h1{font-size:22px;line-height:1.15;color:#22323d;font-weight:850}
+    .header-left p{margin-top:6px;font-size:12px;color:var(--muted)}
+
+    .btn{
+      border:0;border-radius:9px;height:40px;padding:0 14px;display:inline-flex;align-items:center;justify-content:center;
+      gap:8px;cursor:pointer;font-weight:750;font-size:12px;transition:.16s ease;white-space:nowrap
+    }
+    .btn:hover{transform:translateY(-1px)}
+    .btn-primary{background:linear-gradient(135deg,var(--blue-dark),var(--active));color:#fff;box-shadow:0 7px 18px rgba(8,127,194,.18)}
+    .btn-secondary{background:#fff;color:#3e4d56;border:1px solid var(--border)}
+    .btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+    .btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+    .toolbar{
+      display:grid;grid-template-columns:minmax(240px,1.4fr) repeat(3,minmax(150px,.6fr)) auto;
+      gap:9px;background:#fff;border:1px solid var(--border);box-shadow:var(--shadow);padding:10px;margin-bottom:12px
+    }
+    .search{min-height:40px;display:flex;align-items:center;gap:8px;padding:0 11px;border:1px solid var(--border);border-radius:8px;background:#fff}
+    .search svg{width:17px;height:17px;stroke:#82919b;fill:none;stroke-width:2}
+    .search input{border:0;outline:0;width:100%;background:transparent;color:var(--text);font-size:12px}
+    .control{width:100%;min-height:40px;border:1px solid var(--border);border-radius:8px;padding:0 10px;outline:0;background:#fff;color:#34434c;font-size:12px}
+    .control:focus{border-color:#4b9eca;box-shadow:0 0 0 3px rgba(8,127,194,.08)}
+
+    .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+    .stat{background:#fff;border:1px solid var(--border);padding:14px;box-shadow:var(--shadow)}
+    .stat small{display:block;color:#83909a;font-size:10px;text-transform:uppercase;letter-spacing:.06em;font-weight:800}
+    .stat strong{display:block;margin-top:5px;font-size:20px;color:#24343f}
+    .stat span{display:block;margin-top:3px;color:#8a969e;font-size:10px}
+
+    .panel{background:#fff;border:1px solid var(--border);box-shadow:var(--shadow);min-height:360px;overflow:hidden}
+    .table-wrap{overflow:auto}
+    table{width:100%;border-collapse:collapse;min-width:1080px}
+    thead th{
+      position:sticky;top:0;z-index:2;background:#f7f9fa;color:#66747d;font-size:10px;text-transform:uppercase;
+      letter-spacing:.045em;text-align:left;padding:11px 12px;border-bottom:1px solid var(--border);white-space:nowrap
+    }
+    tbody td{padding:11px 12px;border-bottom:1px solid #edf1f3;font-size:12px;vertical-align:middle}
+    tbody tr:hover{background:#fbfdfe}
+
+    .person-main{display:flex;align-items:center;gap:10px;min-width:250px}
+    .avatar{
+      width:42px;height:42px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;
+      background:#edf5f9;border:1px solid #dce9f0;color:#377da5;font-weight:850
+    }
+    .person-name{font-weight:800;color:#293943;font-size:12px}
+    .person-meta{margin-top:3px;color:#8b969d;font-size:10px}
+
+    .badge{
+      display:inline-flex;align-items:center;min-height:24px;padding:0 8px;border-radius:999px;
+      font-size:10px;font-weight:800;border:1px solid transparent;white-space:nowrap
+    }
+    .badge-client{background:#eef8fe;color:#087fc2;border-color:#cfeaf9}
+    .badge-supplier{background:#f5f0ff;color:#7652bd;border-color:#e6dafa}
+    .badge-both{background:#fff7e8;color:#9b6b12;border-color:#f4dfb3}
+    .badge-active{background:#edf9f3;color:#1f8b57;border-color:#d1efdf}
+    .badge-inactive{background:#f4f5f6;color:#7b858d;border-color:#e1e5e8}
+
+    .muted{color:#87939b}
+    .actions{display:flex;align-items:center;gap:5px}
+    .icon-btn{
+      width:32px;height:32px;border:1px solid var(--border);border-radius:8px;background:#fff;
+      display:grid;place-items:center;cursor:pointer;color:#596871
+    }
+    .icon-btn:hover{background:#f4f8fa;color:var(--active)}
+    .icon-btn.danger:hover{background:#fff1f1;color:var(--danger);border-color:#ffd0d0}
+    .icon-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
+
+    .empty{min-height:320px;display:none;align-items:center;justify-content:center;text-align:center;padding:30px}
+    .empty.show{display:flex}
+    .empty-card{max-width:380px}
+    .empty-icon{width:58px;height:58px;border-radius:16px;background:var(--blue-soft);display:grid;place-items:center;margin:0 auto 14px;color:var(--active)}
+    .empty-icon svg{width:28px;height:28px;stroke:currentColor;fill:none;stroke-width:1.7}
+    .empty h3{font-size:16px;color:#33434d;margin-bottom:6px}
+    .empty p{font-size:12px;color:#7e8b94;line-height:1.55}
+
+    .loading{display:none;min-height:320px;align-items:center;justify-content:center}
+    .loading.show{display:flex}
+    .spinner{width:32px;height:32px;border:3px solid #dce9f0;border-top-color:var(--active);border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    .modal{
+      position:fixed;inset:0;z-index:5000;display:none;align-items:center;justify-content:center;
+      padding:18px;background:rgba(13,31,43,.38);backdrop-filter:blur(3px)
+    }
+    .modal.show{display:flex}
+    .modal-card{
+      width:min(940px,100%);max-height:calc(100vh - 36px);overflow:auto;background:#fff;
+      border-radius:16px;box-shadow:0 25px 70px rgba(12,32,45,.24)
+    }
+    .modal-head{
+      position:sticky;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:12px;
+      padding:16px 18px;background:#fff;border-bottom:1px solid #e5eaed
+    }
+    .modal-head h2{font-size:17px;color:#2b3a44}
+    .modal-head p{margin-top:3px;font-size:10px;color:#8a969e}
+    .close-btn{
+      width:34px;height:34px;border:1px solid var(--border);border-radius:9px;background:#fff;display:grid;place-items:center;cursor:pointer;color:#64717a
+    }
+
+    .form-body{padding:17px 18px}
+    .section-title{
+      grid-column:1/-1;font-size:10px;color:#8a969e;text-transform:uppercase;letter-spacing:.08em;font-weight:850;
+      padding:4px 0 0
+    }
+    .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .field.full{grid-column:1/-1}
+    .field label{display:block;margin:0 0 6px 2px;font-size:10px;color:#596871;font-weight:800}
+    .field input,.field select,.field textarea{
+      width:100%;border:1px solid var(--border);border-radius:9px;outline:0;background:#fff;color:#2e3c45;
+      padding:0 11px;font-size:12px
+    }
+    .field input,.field select{height:42px}
+    .field textarea{min-height:92px;padding-top:11px;resize:vertical;line-height:1.45}
+    .field input:focus,.field select:focus,.field textarea:focus{border-color:#4b9eca;box-shadow:0 0 0 3px rgba(8,127,194,.08)}
+
+    .switch-line{
+      min-height:44px;border:1px solid var(--border);border-radius:9px;padding:9px 11px;
+      display:flex;align-items:center;justify-content:space-between;gap:12px
+    }
+    .switch-text strong{display:block;font-size:11px;color:#3c4b54}
+    .switch-text small{display:block;margin-top:3px;color:#8b979f;font-size:9px}
+    .switch{position:relative;width:42px;height:24px;flex:0 0 auto}
+    .switch input{display:none}
+    .switch span{position:absolute;inset:0;background:#cbd3d8;border-radius:999px;cursor:pointer;transition:.2s}
+    .switch span:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+    .switch input:checked + span{background:var(--active)}
+    .switch input:checked + span:before{transform:translateX(18px)}
+
+    .modal-foot{
+      position:sticky;bottom:0;z-index:3;display:flex;justify-content:flex-end;gap:8px;
+      padding:12px 18px;background:#fff;border-top:1px solid #e7ecef
+    }
+
+    .toast-wrap{position:fixed;right:18px;bottom:18px;z-index:9999;display:grid;gap:8px;width:min(360px,calc(100vw - 36px))}
+    .toast{background:#fff;border:1px solid var(--border);border-left:4px solid var(--active);box-shadow:0 12px 32px rgba(13,40,58,.18);padding:12px 13px;border-radius:10px;font-size:11px;color:#42515a}
+    .toast.error{border-left-color:var(--danger)}
+    .toast.success{border-left-color:var(--success)}
+
+    @media(max-width:980px){
+      .toolbar{grid-template-columns:1fr 1fr}
+      .toolbar .search{grid-column:1/-1}
+      .summary{grid-template-columns:repeat(2,1fr)}
+    }
+    @media(max-width:640px){
+      body{padding:8px}
+      .header{align-items:center}
+      .header-left h1{font-size:19px}
+      .header-left p{display:none}
+      .btn{height:38px;padding:0 11px}
+      .toolbar{grid-template-columns:1fr;padding:8px}
+      .toolbar .search{grid-column:auto}
+      .summary{gap:7px}
+      .stat{padding:11px}
+      .stat strong{font-size:17px}
+      .form-grid{grid-template-columns:1fr}
+      .field.full,.section-title{grid-column:auto}
+      .modal{padding:8px}
+      .modal-card{max-height:calc(100vh - 16px);border-radius:13px}
+      .modal-head,.form-body,.modal-foot{padding-left:13px;padding-right:13px}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <div class="header">
+      <div class="header-left">
+        <h1>Clientes e Fornecedores</h1>
+        <p>Cadastre pessoas e empresas que se relacionam com suas lojas.</p>
+      </div>
+
+      <button class="btn btn-primary" id="btnNovo">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Novo cadastro
+      </button>
+    </div>
+
+    <div class="toolbar">
+      <div class="search">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="busca" placeholder="Buscar por nome, documento, telefone, e-mail ou cidade...">
+      </div>
+
+      <select class="control" id="filtroTipo">
+        <option value="">Todos os tipos</option>
+        <option value="cliente">Clientes</option>
+        <option value="fornecedor">Fornecedores</option>
+        <option value="ambos">Clientes e fornecedores</option>
+      </select>
+
+      <select class="control" id="filtroPessoa">
+        <option value="">Pessoa física e jurídica</option>
+        <option value="fisica">Pessoa física</option>
+        <option value="juridica">Pessoa jurídica</option>
+      </select>
+
+      <select class="control" id="filtroStatus">
+        <option value="">Todos os status</option>
+        <option value="ativo">Ativos</option>
+        <option value="inativo">Inativos</option>
+      </select>
+
+      <button class="btn btn-secondary" id="btnAtualizar">
+        <svg viewBox="0 0 24 24"><path d="M20 6v5h-5"/><path d="M4 18v-5h5"/><path d="M18.5 9A7 7 0 0 0 6 6.5L4 9M5.5 15A7 7 0 0 0 18 17.5l2-2.5"/></svg>
+        Atualizar
+      </button>
+    </div>
+
+    <div class="summary">
+      <div class="stat">
+        <small>Total</small>
+        <strong id="statTotal">0</strong>
+        <span>cadastros encontrados</span>
+      </div>
+      <div class="stat">
+        <small>Clientes</small>
+        <strong id="statClientes">0</strong>
+        <span>clientes cadastrados</span>
+      </div>
+      <div class="stat">
+        <small>Fornecedores</small>
+        <strong id="statFornecedores">0</strong>
+        <span>fornecedores cadastrados</span>
+      </div>
+      <div class="stat">
+        <small>Ativos</small>
+        <strong id="statAtivos">0</strong>
+        <span>disponíveis para uso</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="loading" id="loading"><div class="spinner"></div></div>
+
+      <div class="table-wrap" id="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Tipo</th>
+              <th>Documento</th>
+              <th>Contato</th>
+              <th>Cidade/UF</th>
+              <th>Status</th>
+              <th style="width:90px">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="empty" id="empty">
+        <div class="empty-card">
+          <div class="empty-icon">
+            <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-4 2-7 6-7s6 3 6 7"/><path d="M16 7h5M18.5 4.5v5"/></svg>
+          </div>
+          <h3>Nenhum cadastro encontrado</h3>
+          <p>Crie seu primeiro cliente ou fornecedor para começar.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <h2 id="modalTitle">Novo cliente ou fornecedor</h2>
+          <p>Preencha os dados abaixo.</p>
+        </div>
+        <button class="close-btn" id="btnFechar" aria-label="Fechar">✕</button>
+      </div>
+
+      <form id="formCadastro">
+        <div class="form-body">
+          <div class="form-grid">
+
+            <div class="section-title">Identificação</div>
+
+            <div class="field">
+              <label>Tipo de cadastro *</label>
+              <select id="tipo" required>
+                <option value="cliente">Cliente</option>
+                <option value="fornecedor">Fornecedor</option>
+                <option value="ambos">Cliente e fornecedor</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Tipo de pessoa *</label>
+              <select id="tipo_pessoa" required>
+                <option value="fisica">Pessoa física</option>
+                <option value="juridica">Pessoa jurídica</option>
+              </select>
+            </div>
+
+            <div class="field full">
+              <label id="labelNome">Nome completo *</label>
+              <input id="nome" maxlength="180" required placeholder="Nome completo">
+            </div>
+
+            <div class="field juridica-only" style="display:none">
+              <label>Nome fantasia</label>
+              <input id="nome_fantasia" maxlength="180" placeholder="Nome fantasia">
+            </div>
+
+            <div class="field">
+              <label id="labelDocumento">CPF</label>
+              <input id="documento" maxlength="30" placeholder="CPF">
+            </div>
+
+            <div class="field juridica-only" style="display:none">
+              <label>Inscrição estadual</label>
+              <input id="inscricao_estadual" maxlength="50" placeholder="Inscrição estadual">
+            </div>
+
+            <div class="section-title">Contato</div>
+
+            <div class="field">
+              <label>Telefone</label>
+              <input id="telefone" maxlength="30" placeholder="(00) 00000-0000">
+            </div>
+
+            <div class="field">
+              <label>WhatsApp</label>
+              <input id="whatsapp" maxlength="30" placeholder="(00) 00000-0000">
+            </div>
+
+            <div class="field">
+              <label>E-mail</label>
+              <input id="email" type="email" maxlength="180" placeholder="email@exemplo.com">
+            </div>
+
+            <div class="field">
+              <label>Contato responsável</label>
+              <input id="contato_responsavel" maxlength="120" placeholder="Nome do responsável">
+            </div>
+
+            <div class="section-title">Endereço</div>
+
+            <div class="field">
+              <label>CEP</label>
+              <input id="cep" maxlength="12" placeholder="00000-000">
+            </div>
+
+            <div class="field">
+              <label>Logradouro</label>
+              <input id="logradouro" maxlength="180" placeholder="Rua / Avenida">
+            </div>
+
+            <div class="field">
+              <label>Número</label>
+              <input id="numero" maxlength="30" placeholder="Número">
+            </div>
+
+            <div class="field">
+              <label>Complemento</label>
+              <input id="complemento" maxlength="120" placeholder="Complemento">
+            </div>
+
+            <div class="field">
+              <label>Bairro</label>
+              <input id="bairro" maxlength="120" placeholder="Bairro">
+            </div>
+
+            <div class="field">
+              <label>Cidade</label>
+              <input id="cidade" maxlength="120" placeholder="Cidade">
+            </div>
+
+            <div class="field">
+              <label>UF</label>
+              <input id="estado" maxlength="2" placeholder="BA" style="text-transform:uppercase">
+            </div>
+
+            <div class="field full">
+              <label>Observações</label>
+              <textarea id="observacoes" maxlength="1800" placeholder="Informações adicionais..."></textarea>
+            </div>
+
+            <div class="field">
+              <div class="switch-line">
+                <div class="switch-text">
+                  <strong>Cadastro ativo</strong>
+                  <small>Disponível para uso no sistema.</small>
+                </div>
+                <label class="switch">
+                  <input id="ativo" type="checkbox" checked>
+                  <span></span>
+                </label>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="modal-foot">
+          <button class="btn btn-secondary" type="button" id="btnCancelar">Cancelar</button>
+          <button class="btn btn-primary" type="submit" id="btnSalvar">Salvar cadastro</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <script>
+    const API = "/api/clientes-fornecedores";
+    let registros = [];
+    let editandoId = null;
+
+    const $ = id => document.getElementById(id);
+
+    function toast(msg,tipo="success"){
+      const el=document.createElement("div");
+      el.className=`toast ${tipo}`;
+      el.textContent=msg;
+      $("toastWrap").appendChild(el);
+      setTimeout(()=>el.remove(),3500);
+    }
+
+    function escapeHtml(v){
+      return String(v??"").replace(/[&<>"']/g,m=>({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+      }[m]));
+    }
+
+    function iniciais(nome){
+      const partes=String(nome||"").trim().split(/\s+/).filter(Boolean);
+      if(!partes.length)return "C";
+      return partes.slice(0,2).map(p=>p[0]).join("").toUpperCase();
+    }
+
+    function somenteDigitos(v){ return String(v||"").replace(/\D/g,""); }
+
+    function formatDocumento(v,tipoPessoa){
+      const d=somenteDigitos(v);
+      if(tipoPessoa==="fisica" && d.length===11){
+        return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,"$1.$2.$3-$4");
+      }
+      if(tipoPessoa==="juridica" && d.length===14){
+        return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,"$1.$2.$3/$4-$5");
+      }
+      return v||"-";
+    }
+
+    async function request(url,options={}){
+      const r=await fetch(url,{
+        credentials:"include",
+        cache:"no-store",
+        headers:{"Content-Type":"application/json",...(options.headers||{})},
+        ...options
+      });
+      let data={};
+      try{data=await r.json()}catch{}
+      if(r.status===401){
+        window.top.location.href="/";
+        throw new Error("Sessão expirada.");
+      }
+      if(!r.ok) throw new Error(data.error||"Erro na operação.");
+      return data;
+    }
+
+    async function carregar(){
+      $("loading").classList.add("show");
+      $("tableWrap").style.display="none";
+      $("empty").classList.remove("show");
+
+      try{
+        const data=await request(API);
+        registros=Array.isArray(data.items)?data.items:[];
+        render();
+      }catch(e){
+        toast(e.message,"error");
+        registros=[];
+        render();
+      }finally{
+        $("loading").classList.remove("show");
+      }
+    }
+
+    function filtrados(){
+      const q=$("busca").value.trim().toLowerCase();
+      const tipo=$("filtroTipo").value;
+      const pessoa=$("filtroPessoa").value;
+      const status=$("filtroStatus").value;
+
+      return registros.filter(x=>{
+        const texto=[
+          x.nome,x.nome_fantasia,x.documento,x.telefone,x.whatsapp,x.email,
+          x.cidade,x.estado,x.contato_responsavel
+        ].filter(Boolean).join(" ").toLowerCase();
+
+        if(q && !texto.includes(q)) return false;
+        if(tipo && x.tipo!==tipo) return false;
+        if(pessoa && x.tipo_pessoa!==pessoa) return false;
+        if(status==="ativo" && !x.ativo) return false;
+        if(status==="inativo" && x.ativo) return false;
+        return true;
+      });
+    }
+
+    function atualizarResumo(lista){
+      $("statTotal").textContent=lista.length;
+      $("statClientes").textContent=lista.filter(x=>x.tipo==="cliente"||x.tipo==="ambos").length;
+      $("statFornecedores").textContent=lista.filter(x=>x.tipo==="fornecedor"||x.tipo==="ambos").length;
+      $("statAtivos").textContent=lista.filter(x=>x.ativo).length;
+    }
+
+    function badgeTipo(tipo){
+      if(tipo==="fornecedor") return '<span class="badge badge-supplier">Fornecedor</span>';
+      if(tipo==="ambos") return '<span class="badge badge-both">Cliente e fornecedor</span>';
+      return '<span class="badge badge-client">Cliente</span>';
+    }
+
+    function render(){
+      const lista=filtrados();
+      atualizarResumo(lista);
+
+      if(!lista.length){
+        $("tableWrap").style.display="none";
+        $("empty").classList.add("show");
+        return;
+      }
+
+      $("empty").classList.remove("show");
+      $("tableWrap").style.display="block";
+
+      $("tbody").innerHTML=lista.map(x=>{
+        const nomeExibicao=x.nome_fantasia||x.nome||"Sem nome";
+        const meta=x.nome_fantasia && x.nome ? x.nome : (x.tipo_pessoa==="juridica"?"Pessoa jurídica":"Pessoa física");
+        const contato=x.whatsapp||x.telefone||x.email||"-";
+        const cidade=[x.cidade,x.estado].filter(Boolean).join("/")||"-";
+
+        return `
+          <tr>
+            <td>
+              <div class="person-main">
+                <div class="avatar">${escapeHtml(iniciais(nomeExibicao))}</div>
+                <div>
+                  <div class="person-name">${escapeHtml(nomeExibicao)}</div>
+                  <div class="person-meta">${escapeHtml(meta)}</div>
+                </div>
+              </div>
+            </td>
+            <td>${badgeTipo(x.tipo)}</td>
+            <td>${escapeHtml(formatDocumento(x.documento,x.tipo_pessoa))}</td>
+            <td>
+              <div>${escapeHtml(contato)}</div>
+              ${x.email && contato!==x.email ? `<div class="person-meta">${escapeHtml(x.email)}</div>`:""}
+            </td>
+            <td>${escapeHtml(cidade)}</td>
+            <td><span class="badge ${x.ativo?"badge-active":"badge-inactive"}">${x.ativo?"Ativo":"Inativo"}</span></td>
+            <td>
+              <div class="actions">
+                <button class="icon-btn" onclick="editar('${x.id}')" title="Editar">
+                  <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                </button>
+                <button class="icon-btn danger" onclick="excluir('${x.id}','${escapeHtml(nomeExibicao).replace(/'/g,"&#039;")}')" title="Excluir">
+                  <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>
+                </button>
+              </div>
+            </td>
+          </tr>`;
+      }).join("");
+    }
+
+    function abrirNovo(){
+      editandoId=null;
+      $("modalTitle").textContent="Novo cliente ou fornecedor";
+      $("formCadastro").reset();
+      $("tipo").value="cliente";
+      $("tipo_pessoa").value="fisica";
+      $("ativo").checked=true;
+      atualizarTipoPessoa();
+      $("modal").classList.add("show");
+      setTimeout(()=>$("nome").focus(),80);
+    }
+
+    function editar(id){
+      const x=registros.find(i=>i.id===id);
+      if(!x)return;
+
+      editandoId=id;
+      $("modalTitle").textContent="Editar cadastro";
+      $("tipo").value=x.tipo||"cliente";
+      $("tipo_pessoa").value=x.tipo_pessoa||"fisica";
+      $("nome").value=x.nome||"";
+      $("nome_fantasia").value=x.nome_fantasia||"";
+      $("documento").value=x.documento||"";
+      $("inscricao_estadual").value=x.inscricao_estadual||"";
+      $("telefone").value=x.telefone||"";
+      $("whatsapp").value=x.whatsapp||"";
+      $("email").value=x.email||"";
+      $("contato_responsavel").value=x.contato_responsavel||"";
+      $("cep").value=x.cep||"";
+      $("logradouro").value=x.logradouro||"";
+      $("numero").value=x.numero||"";
+      $("complemento").value=x.complemento||"";
+      $("bairro").value=x.bairro||"";
+      $("cidade").value=x.cidade||"";
+      $("estado").value=x.estado||"";
+      $("observacoes").value=x.observacoes||"";
+      $("ativo").checked=!!x.ativo;
+
+      atualizarTipoPessoa();
+      $("modal").classList.add("show");
+    }
+
+    function fechar(){ $("modal").classList.remove("show"); }
+
+    function atualizarTipoPessoa(){
+      const juridica=$("tipo_pessoa").value==="juridica";
+      document.querySelectorAll(".juridica-only").forEach(el=>el.style.display=juridica?"":"none");
+      $("labelNome").textContent=juridica?"Razão social *":"Nome completo *";
+      $("nome").placeholder=juridica?"Razão social":"Nome completo";
+      $("labelDocumento").textContent=juridica?"CNPJ":"CPF";
+      $("documento").placeholder=juridica?"CNPJ":"CPF";
+    }
+
+    async function salvar(e){
+      e.preventDefault();
+
+      const payload={
+        tipo:$("tipo").value,
+        tipo_pessoa:$("tipo_pessoa").value,
+        nome:$("nome").value.trim(),
+        nome_fantasia:$("nome_fantasia").value.trim()||null,
+        documento:somenteDigitos($("documento").value)||null,
+        inscricao_estadual:$("inscricao_estadual").value.trim()||null,
+        telefone:$("telefone").value.trim()||null,
+        whatsapp:$("whatsapp").value.trim()||null,
+        email:$("email").value.trim().toLowerCase()||null,
+        contato_responsavel:$("contato_responsavel").value.trim()||null,
+        cep:$("cep").value.trim()||null,
+        logradouro:$("logradouro").value.trim()||null,
+        numero:$("numero").value.trim()||null,
+        complemento:$("complemento").value.trim()||null,
+        bairro:$("bairro").value.trim()||null,
+        cidade:$("cidade").value.trim()||null,
+        estado:$("estado").value.trim().toUpperCase()||null,
+        observacoes:$("observacoes").value.trim()||null,
+        ativo:$("ativo").checked
+      };
+
+      if(!payload.nome){
+        toast("Informe o nome ou razão social.","error");
+        return;
+      }
+
+      const btn=$("btnSalvar");
+      btn.disabled=true;
+      btn.textContent="Salvando...";
+
+      try{
+        if(editandoId){
+          await request(`${API}?id=${encodeURIComponent(editandoId)}`,{
+            method:"PATCH",
+            body:JSON.stringify(payload)
+          });
+          toast("Cadastro atualizado.");
+        }else{
+          await request(API,{
+            method:"POST",
+            body:JSON.stringify(payload)
+          });
+          toast("Cadastro criado.");
+        }
+
+        fechar();
+        await carregar();
+
+      }catch(err){
+        toast(err.message,"error");
+      }finally{
+        btn.disabled=false;
+        btn.textContent="Salvar cadastro";
+      }
+    }
+
+    async function excluir(id,nome){
+      if(!confirm(`Excluir "${nome}"?\n\nEsta ação não poderá ser desfeita.`)) return;
+
+      try{
+        await request(`${API}?id=${encodeURIComponent(id)}`,{method:"DELETE"});
+        toast("Cadastro excluído.");
+        await carregar();
+      }catch(err){
+        toast(err.message,"error");
+      }
+    }
+
+    $("btnNovo").addEventListener("click",abrirNovo);
+    $("btnFechar").addEventListener("click",fechar);
+    $("btnCancelar").addEventListener("click",fechar);
+    $("formCadastro").addEventListener("submit",salvar);
+    $("tipo_pessoa").addEventListener("change",atualizarTipoPessoa);
+    $("btnAtualizar").addEventListener("click",carregar);
+
+    ["busca","filtroTipo","filtroPessoa","filtroStatus"].forEach(id=>{
+      $(id).addEventListener(id==="busca"?"input":"change",render);
+    });
+
+    $("modal").addEventListener("click",e=>{
+      if(e.target===$("modal")) fechar();
+    });
+
+    document.addEventListener("keydown",e=>{
+      if(e.key==="Escape") fechar();
+    });
+
+    carregar();
+  </script>
+</body>
+</html>
