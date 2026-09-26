@@ -1,329 +1,383 @@
 import { createClient } from "@supabase/supabase-js";
 import { requireAuth } from "./auth/require-auth.js";
 
-function db() {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+function db(){
+  const url=process.env.SUPABASE_URL;
+  const key=process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!url || !key) {
+  if(!url||!key){
     throw new Error("Credenciais Supabase não configuradas.");
   }
 
-  return createClient(url, key, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false
+  return createClient(url,key,{
+    auth:{
+      persistSession:false,
+      autoRefreshToken:false
     }
   });
 }
 
-const STATUS = ["aberto","confirmado","em_entrega","concluido","cancelado"];
-const PAGAMENTOS = [
-  "dinheiro","pix","cartao_credito","cartao_debito",
-  "boleto","transferencia","prazo","outro"
+const STATUS=[
+  "aberto",
+  "confirmado",
+  "em_entrega",
+  "concluido",
+  "cancelado"
 ];
 
-function normalizarPedido(body = {}) {
-  const forma = PAGAMENTOS.includes(body.forma_pagamento)
+const FORMAS=[
+  "dinheiro",
+  "pix",
+  "cartao_credito",
+  "cartao_debito",
+  "boleto",
+  "transferencia",
+  "prazo",
+  "outro"
+];
+
+function normalizar(body={}){
+  const forma=FORMAS.includes(body.forma_pagamento)
     ? body.forma_pagamento
     : "dinheiro";
 
   return {
-    cliente_id: body.cliente_id || null,
-    loja_id: body.loja_id || null,
-    vendedor_id: body.vendedor_id || null,
-    entregador_id: body.entregador_id || null,
-    tipo_atendimento: ["retirada","entrega","balcao"].includes(body.tipo_atendimento)
+    cliente_id:body.cliente_id||null,
+    loja_id:body.loja_id||null,
+    vendedor_id:body.vendedor_id||null,
+    entregador_id:body.entregador_id||null,
+
+    tipo_atendimento:["retirada","entrega","balcao"].includes(body.tipo_atendimento)
       ? body.tipo_atendimento
       : "retirada",
-    data_pedido: body.data_pedido || new Date().toISOString(),
-    previsao_entrega: body.previsao_entrega || null,
-    status: STATUS.includes(body.status) ? body.status : "aberto",
-    forma_pagamento: forma,
-    status_pagamento: body.status_pagamento === "pendente" ? "pendente" : "pago",
-    data_vencimento: forma === "prazo" ? body.data_vencimento || null : null,
-    condicao_pagamento: forma === "prazo"
-      ? String(body.condicao_pagamento || "30 dias").trim()
+
+    data_pedido:body.data_pedido||new Date().toISOString(),
+    previsao_entrega:body.previsao_entrega||null,
+
+    // concluído/cancelado não entram por POST/PUT.
+    status:["aberto","confirmado","em_entrega"].includes(body.status)
+      ? body.status
+      : "aberto",
+
+    forma_pagamento:forma,
+    status_pagamento:body.status_pagamento==="pendente"
+      ? "pendente"
+      : "pago",
+
+    data_vencimento:forma==="prazo"
+      ? body.data_vencimento||null
       : null,
-    valor_recebido: Number(body.valor_recebido || 0),
-    observacao_pagamento: body.observacao_pagamento
+
+    condicao_pagamento:forma==="prazo"
+      ? String(body.condicao_pagamento||"30 dias").trim()
+      : null,
+
+    valor_recebido:Number(body.valor_recebido||0),
+    observacao_pagamento:body.observacao_pagamento
       ? String(body.observacao_pagamento).trim()
       : null,
-    desconto_geral: Number(body.desconto_geral || 0),
-    frete: Number(body.frete || 0),
-    observacoes: body.observacoes ? String(body.observacoes).trim() : null,
-    itens: Array.isArray(body.itens) ? body.itens : []
+
+    desconto_geral:Number(body.desconto_geral||0),
+    frete:Number(body.frete||0),
+    observacoes:body.observacoes
+      ? String(body.observacoes).trim()
+      : null,
+
+    itens:Array.isArray(body.itens)
+      ? body.itens.map(x=>({
+          produto_id:x.produto_id,
+          quantidade:Number(x.quantidade||0),
+          preco_unitario:Number(x.preco_unitario||0),
+          desconto:Number(x.desconto||0)
+        }))
+      : []
   };
 }
 
-async function validarBasico(body) {
-  if (!body.cliente_id) throw new Error("Selecione o cliente.");
-  if (!body.loja_id) throw new Error("Selecione a loja / filial.");
-  if (!body.itens.length) throw new Error("Adicione pelo menos um item.");
+function validar(body){
+  if(!body.cliente_id){
+    throw new Error("Selecione o cliente.");
+  }
 
-  if (body.forma_pagamento === "prazo" && !body.data_vencimento) {
+  if(!body.loja_id){
+    throw new Error("Selecione a loja / filial.");
+  }
+
+  if(!body.itens.length){
+    throw new Error("Adicione pelo menos um item.");
+  }
+
+  if(body.itens.some(x=>!x.produto_id||!Number.isFinite(x.quantidade)||x.quantidade<=0)){
+    throw new Error("Existe item com quantidade inválida.");
+  }
+
+  if(body.forma_pagamento==="prazo"&&!body.data_vencimento){
     throw new Error("Informe a data de vencimento.");
   }
 }
 
-export default async function handler(req, res) {
-  res.setHeader("Cache-Control", "no-store");
+export default async function handler(req,res){
+  res.setHeader("Cache-Control","no-store");
 
-  const auth = await requireAuth(req, res);
-  if (!auth) return;
+  const auth=await requireAuth(req,res);
+  if(!auth)return;
 
-  const supabase = db();
+  const supabase=db();
 
-  try {
-    // =========================================================
+  try{
+    // ========================================================
     // GET
-    // =========================================================
-    if (req.method === "GET") {
-      const id = String(req.query?.id || "").trim();
+    // ========================================================
+    if(req.method==="GET"){
+      const id=String(req.query?.id||"").trim();
 
-      if (id) {
-        const { data: pedido, error } = await supabase
+      if(id){
+        const {data:pedido,error}=await supabase
           .from("pedidos")
           .select("*")
-          .eq("id", id)
+          .eq("id",id)
           .single();
 
-        if (error) throw error;
+        if(error)throw error;
 
-        const { data: itens, error: itensError } = await supabase
+        const {data:itens,error:itensError}=await supabase
           .from("pedido_itens")
           .select("*")
-          .eq("pedido_id", id)
-          .order("ordem", { ascending: true });
+          .eq("pedido_id",id)
+          .order("ordem",{ascending:true});
 
-        if (itensError) throw itensError;
+        if(itensError)throw itensError;
 
         return res.status(200).json({
-          ok: true,
-          item: {
+          ok:true,
+          item:{
             ...pedido,
-            itens: itens || []
+            itens:itens||[]
           }
         });
       }
 
-      const { data, error } = await supabase
+      const {data,error}=await supabase
         .from("pedidos")
         .select("*")
-        .order("data_pedido", { ascending: false })
-        .limit(500);
+        .order("data_pedido",{ascending:false})
+        .limit(1000);
 
-      if (error) throw error;
+      if(error)throw error;
 
       return res.status(200).json({
-        ok: true,
-        items: data || []
+        ok:true,
+        items:data||[]
       });
     }
 
-    // =========================================================
-    // POST - cria pedido SEM movimentar estoque
-    // =========================================================
-    if (req.method === "POST") {
-      const body = normalizarPedido(req.body);
-      await validarBasico(body);
+    // ========================================================
+    // POST - CRIA SEM MEXER NO ESTOQUE
+    // ========================================================
+    if(req.method==="POST"){
+      const body=normalizar(req.body);
+      validar(body);
 
-      const { data, error } = await supabase.rpc(
-        "criar_pedido_completo_v2",
+      const {data,error}=await supabase.rpc(
+        "criar_pedido_completo_v3",
         {
-          p_cliente_id: body.cliente_id,
-          p_loja_id: body.loja_id,
-          p_vendedor_id: body.vendedor_id,
-          p_entregador_id: body.entregador_id,
-          p_tipo_atendimento: body.tipo_atendimento,
-          p_data_pedido: body.data_pedido,
-          p_previsao_entrega: body.previsao_entrega,
-          p_status: body.status,
-          p_forma_pagamento: body.forma_pagamento,
-          p_status_pagamento: body.status_pagamento,
-          p_data_vencimento: body.data_vencimento,
-          p_condicao_pagamento: body.condicao_pagamento,
-          p_valor_recebido: body.valor_recebido,
-          p_observacao_pagamento: body.observacao_pagamento,
-          p_desconto_geral: body.desconto_geral,
-          p_frete: body.frete,
-          p_observacoes: body.observacoes,
-          p_itens: body.itens,
-          p_usuario_id: auth.user.id,
-          p_usuario_email: auth.user.email
+          p_cliente_id:body.cliente_id,
+          p_loja_id:body.loja_id,
+          p_vendedor_id:body.vendedor_id,
+          p_entregador_id:body.entregador_id,
+          p_tipo_atendimento:body.tipo_atendimento,
+          p_data_pedido:body.data_pedido,
+          p_previsao_entrega:body.previsao_entrega,
+          p_status:body.status,
+          p_forma_pagamento:body.forma_pagamento,
+          p_status_pagamento:body.status_pagamento,
+          p_data_vencimento:body.data_vencimento,
+          p_condicao_pagamento:body.condicao_pagamento,
+          p_valor_recebido:body.valor_recebido,
+          p_observacao_pagamento:body.observacao_pagamento,
+          p_desconto_geral:body.desconto_geral,
+          p_frete:body.frete,
+          p_observacoes:body.observacoes,
+          p_itens:body.itens,
+          p_usuario_id:auth.user.id,
+          p_usuario_email:auth.user.email
         }
       );
 
-      if (error) throw error;
+      if(error)throw error;
 
       return res.status(201).json({
-        ok: true,
-        item: data
+        ok:true,
+        item:data
       });
     }
 
-    // =========================================================
-    // PUT - edita pedido enquanto ainda NÃO foi entregue
-    // Não movimenta estoque.
-    // =========================================================
-    if (req.method === "PUT") {
-      const id = String(req.query?.id || "").trim();
+    // ========================================================
+    // PUT - EDITA COMPLETO SEM MEXER NO ESTOQUE
+    // ========================================================
+    if(req.method==="PUT"){
+      const id=String(req.query?.id||"").trim();
 
-      if (!id) {
+      if(!id){
         return res.status(400).json({
-          error: "ID não informado."
+          error:"ID não informado."
         });
       }
 
-      const body = normalizarPedido(req.body);
-      await validarBasico(body);
+      const body=normalizar(req.body);
+      validar(body);
 
-      const { data: atual, error: atualError } = await supabase
+      const {data:atual,error:atualError}=await supabase
         .from("pedidos")
         .select("id,status")
-        .eq("id", id)
+        .eq("id",id)
         .single();
 
-      if (atualError) throw atualError;
+      if(atualError)throw atualError;
 
-      if (atual.status === "cancelado") {
+      if(atual.status==="concluido"){
         return res.status(409).json({
-          error: "Pedido cancelado não pode ser editado."
+          error:"Pedido já entregue não pode ser editado."
         });
       }
 
-      if (atual.status === "concluido") {
+      if(atual.status==="cancelado"){
         return res.status(409).json({
-          error: "Pedido já entregue não pode ser editado."
+          error:"Pedido cancelado não pode ser editado."
         });
       }
 
-      const { data, error } = await supabase.rpc(
-        "atualizar_pedido_completo_v2",
+      const {data,error}=await supabase.rpc(
+        "atualizar_pedido_completo_v3",
         {
-          p_pedido_id: id,
-          p_cliente_id: body.cliente_id,
-          p_loja_id: body.loja_id,
-          p_vendedor_id: body.vendedor_id,
-          p_entregador_id: body.entregador_id,
-          p_tipo_atendimento: body.tipo_atendimento,
-          p_data_pedido: body.data_pedido,
-          p_previsao_entrega: body.previsao_entrega,
-          p_status: body.status,
-          p_forma_pagamento: body.forma_pagamento,
-          p_status_pagamento: body.status_pagamento,
-          p_data_vencimento: body.data_vencimento,
-          p_condicao_pagamento: body.condicao_pagamento,
-          p_valor_recebido: body.valor_recebido,
-          p_observacao_pagamento: body.observacao_pagamento,
-          p_desconto_geral: body.desconto_geral,
-          p_frete: body.frete,
-          p_observacoes: body.observacoes,
-          p_itens: body.itens,
-          p_usuario_id: auth.user.id,
-          p_usuario_email: auth.user.email
+          p_pedido_id:id,
+          p_cliente_id:body.cliente_id,
+          p_loja_id:body.loja_id,
+          p_vendedor_id:body.vendedor_id,
+          p_entregador_id:body.entregador_id,
+          p_tipo_atendimento:body.tipo_atendimento,
+          p_data_pedido:body.data_pedido,
+          p_previsao_entrega:body.previsao_entrega,
+          p_status:body.status,
+          p_forma_pagamento:body.forma_pagamento,
+          p_status_pagamento:body.status_pagamento,
+          p_data_vencimento:body.data_vencimento,
+          p_condicao_pagamento:body.condicao_pagamento,
+          p_valor_recebido:body.valor_recebido,
+          p_observacao_pagamento:body.observacao_pagamento,
+          p_desconto_geral:body.desconto_geral,
+          p_frete:body.frete,
+          p_observacoes:body.observacoes,
+          p_itens:body.itens,
+          p_usuario_id:auth.user.id,
+          p_usuario_email:auth.user.email
         }
       );
 
-      if (error) throw error;
+      if(error)throw error;
 
       return res.status(200).json({
-        ok: true,
-        item: data
+        ok:true,
+        item:data
       });
     }
 
-    // =========================================================
-    // PATCH
-    // CONCLUIDO => função SQL gera movimentações e marca entregue.
-    // CANCELADO => apenas cancela enquanto não entregue.
-    // =========================================================
-    if (req.method === "PATCH") {
-      const id = String(req.query?.id || "").trim();
+    // ========================================================
+    // PATCH - ENTREGAR OU CANCELAR
+    // ========================================================
+    if(req.method==="PATCH"){
+      const id=String(req.query?.id||"").trim();
 
-      if (!id) {
+      if(!id){
         return res.status(400).json({
-          error: "ID não informado."
+          error:"ID não informado."
         });
       }
 
-      const status = String(req.body?.status || "");
+      const status=String(req.body?.status||"");
 
-      if (!STATUS.includes(status)) {
+      if(!STATUS.includes(status)){
         return res.status(400).json({
-          error: "Status inválido."
+          error:"Status inválido."
         });
       }
 
-      if (status === "concluido") {
-        const { data, error } = await supabase.rpc(
-          "entregar_pedido_e_movimentar_estoque",
+      // ENTREGA É UMA OPERAÇÃO ATÔMICA NO BANCO.
+      if(status==="concluido"){
+        const {data,error}=await supabase.rpc(
+          "entregar_pedido_e_movimentar_estoque_v3",
           {
-            p_pedido_id: id,
-            p_usuario_id: auth.user.id,
-            p_usuario_email: auth.user.email
+            p_pedido_id:id,
+            p_usuario_id:auth.user.id,
+            p_usuario_email:auth.user.email
           }
         );
 
-        if (error) throw error;
+        if(error)throw error;
 
         return res.status(200).json({
-          ok: true,
-          item: data
+          ok:true,
+          item:data
         });
       }
 
-      const { data: atual, error: atualError } = await supabase
+      const {data:atual,error:atualError}=await supabase
         .from("pedidos")
         .select("id,status")
-        .eq("id", id)
+        .eq("id",id)
         .single();
 
-      if (atualError) throw atualError;
+      if(atualError)throw atualError;
 
-      if (atual.status === "concluido") {
+      if(atual.status==="concluido"){
         return res.status(409).json({
-          error: "Pedido já entregue não pode ter o status alterado."
+          error:"Pedido entregue não pode ter o status alterado."
         });
       }
 
-      const update = {
-        status,
-        atualizado_em: new Date().toISOString(),
-        atualizado_por: auth.user.id,
-        atualizado_por_email: auth.user.email
-      };
-
-      if (status === "cancelado") {
-        update.cancelado_em = new Date().toISOString();
+      if(atual.status==="cancelado"){
+        return res.status(409).json({
+          error:"Pedido já está cancelado."
+        });
       }
 
-      const { data, error } = await supabase
+      const update={
+        status,
+        atualizado_em:new Date().toISOString(),
+        atualizado_por:auth.user.id,
+        atualizado_por_email:auth.user.email
+      };
+
+      if(status==="cancelado"){
+        update.cancelado_em=new Date().toISOString();
+      }
+
+      const {data,error}=await supabase
         .from("pedidos")
         .update(update)
-        .eq("id", id)
+        .eq("id",id)
         .select("*")
         .single();
 
-      if (error) throw error;
+      if(error)throw error;
 
       return res.status(200).json({
-        ok: true,
-        item: data
+        ok:true,
+        item:data
       });
     }
 
-    res.setHeader("Allow", "GET, POST, PUT, PATCH");
+    res.setHeader("Allow","GET, POST, PUT, PATCH");
 
     return res.status(405).json({
-      error: "Método não permitido."
+      error:"Método não permitido."
     });
 
-  } catch (error) {
-    console.error("PEDIDOS_ERROR", error);
+  }catch(error){
+    console.error("PEDIDOS_ERROR",error);
 
     return res.status(500).json({
-      error: error?.message || "Erro interno."
+      error:error?.message||"Erro interno."
     });
   }
 }

@@ -132,6 +132,47 @@ tbody tr:hover{background:#fbfdfe}
 .staff-row{display:grid;grid-template-columns:1.4fr .8fr .8fr auto;gap:10px;align-items:center;padding:10px;border-bottom:1px solid #edf1f3;font-size:11px}
 .staff-row:last-child{border-bottom:0}
 .staff-name{font-weight:800}.staff-meta{font-size:9px;color:#8a969e;margin-top:2px}
+
+.client-search-wrap{position:relative}
+.client-search-input-wrap{
+  height:40px;display:flex;align-items:center;gap:8px;border:1px solid var(--border);
+  border-radius:8px;background:#fff;padding:0 10px
+}
+.client-search-input-wrap:focus-within{border-color:#4b9eca;box-shadow:0 0 0 3px rgba(8,127,194,.08)}
+.client-search-input-wrap svg{width:16px;height:16px;stroke:#84939c;fill:none;stroke-width:2;flex:0 0 auto}
+.client-search-input-wrap input{border:0!important;box-shadow:none!important;padding:0!important;height:38px!important;min-width:0}
+.client-clear{border:0;background:transparent;color:#87939b;cursor:pointer;font-size:17px;line-height:1;display:none}
+.client-clear.show{display:block}
+.client-menu{
+  display:none;position:absolute;left:0;right:0;top:65px;z-index:45;max-height:280px;overflow:auto;
+  background:#fff;border:1px solid var(--border);border-radius:9px;box-shadow:0 14px 30px rgba(20,48,65,.18)
+}
+.client-menu.show{display:block}
+.client-option{padding:10px 11px;border-bottom:1px solid #edf1f3;cursor:pointer}
+.client-option:last-child{border-bottom:0}.client-option:hover{background:#f5f9fb}
+.client-option strong{display:block;font-size:11px;color:#34444e}
+.client-option small{display:block;margin-top:3px;font-size:9px;color:#88959d}
+.client-selected{
+  display:none;margin-top:6px;padding:7px 9px;border-radius:7px;background:#eef8fe;border:1px solid #d4ebf7;
+  font-size:9px;color:#47738b
+}
+.client-selected.show{display:block}
+.action-btn{
+  min-height:30px;border:1px solid var(--border);border-radius:7px;background:#fff;padding:0 9px;
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;font-size:9px;font-weight:850;cursor:pointer;white-space:nowrap
+}
+.action-btn:hover{background:#f5f9fb}
+.action-btn.edit{color:var(--active);border-color:#cfe5f1;background:#f7fcff}
+.action-btn.deliver{color:var(--success);border-color:#cfe8dc;background:#f7fcf9}
+.action-btn.deliver:hover{background:#edf9f3}
+.action-btn.danger{color:var(--danger)}
+.action-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
+.actions{flex-wrap:wrap;min-width:290px}
+.delivery-note{
+  margin-top:8px;padding:9px 10px;border-radius:8px;background:#edf9f3;border:1px solid #d1efdf;
+  color:#356f53;font-size:9px;line-height:1.45
+}
+
 @media(max-width:1050px){.toolbar{grid-template-columns:1fr 1fr}.toolbar .search{grid-column:1/-1}.summary{grid-template-columns:repeat(3,1fr)}.grid{grid-template-columns:repeat(2,1fr)}.totals{grid-template-columns:1fr}.item-search-row{grid-template-columns:1fr 100px 120px auto}}
 @media(max-width:650px){body{padding:8px}.header{align-items:center}.header h1{font-size:19px}.header p{display:none}.header-actions .btn span.hide-mobile{display:none}.summary{grid-template-columns:repeat(2,1fr);gap:7px}.toolbar{grid-template-columns:1fr;padding:8px}.toolbar .search{grid-column:auto}.grid,.grid.two,.payment-grid{grid-template-columns:1fr}.field.span2,.field.full{grid-column:auto}.item-search-row{grid-template-columns:1fr 1fr}.item-search-row .product-results{grid-column:1/-1}.item-search-row .add-item{grid-column:1/-1}.modal{padding:5px}.modal-card{max-height:calc(100vh - 10px);border-radius:12px}.modal-head,.form-body,.modal-foot{padding-left:10px;padding-right:10px}.totals-box{padding:10px}.staff-row{grid-template-columns:1fr auto}.staff-row>:nth-child(2),.staff-row>:nth-child(3){display:none}}
 @media print{
@@ -203,7 +244,7 @@ tbody tr:hover{background:#fbfdfe}
     <div class="loading" id="loading"><div class="spinner"></div></div>
     <div class="table-wrap" id="tableWrap">
       <table>
-        <thead><tr><th>Pedido</th><th>Cliente</th><th>Vendedor</th><th>Entregador</th><th>Pagamento</th><th>Total</th><th>Status</th><th style="width:130px">Ações</th></tr></thead>
+        <thead><tr><th>Pedido</th><th>Cliente</th><th>Vendedor</th><th>Entregador</th><th>Pagamento</th><th>Total</th><th>Status</th><th style="width:310px">Ações</th></tr></thead>
         <tbody id="tbody"></tbody>
       </table>
     </div>
@@ -225,7 +266,17 @@ tbody tr:hover{background:#fbfdfe}
           <div class="section-head"><div class="section-title">Dados do pedido</div></div>
           <div class="section-body">
             <div class="grid">
-              <div class="field span2"><label>Cliente *</label><select id="cliente_id" required><option value="">Selecione o cliente</option></select></div>
+              <div class="field span2 client-search-wrap">
+  <label>Cliente *</label>
+  <input type="hidden" id="cliente_id">
+  <div class="client-search-input-wrap">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="clienteBusca" autocomplete="off" placeholder="Digite nome, CPF/CNPJ, telefone ou e-mail">
+    <button type="button" class="client-clear" id="clienteClear" aria-label="Limpar cliente">×</button>
+  </div>
+  <div class="client-menu" id="clienteMenu"></div>
+  <div class="client-selected" id="clienteSelecionado"></div>
+</div>
               <div class="field"><label>Loja / filial *</label><select id="loja_id" required><option value="">Selecione a loja</option></select></div>
               <div class="field"><label>Vendedor</label><select id="vendedor_id"><option value="">Sem vendedor</option></select></div>
               <div class="field"><label>Entregador</label><select id="entregador_id"><option value="">Sem entregador</option></select></div>
@@ -233,6 +284,11 @@ tbody tr:hover{background:#fbfdfe}
               <div class="field"><label>Data do pedido</label><input id="data_pedido" type="datetime-local"></div>
               <div class="field"><label>Previsão de entrega</label><input id="previsao_entrega" type="datetime-local"></div>
               <div class="field"><label>Status</label><select id="status"><option value="aberto">Aberto</option><option value="confirmado">Confirmado</option><option value="em_entrega">Em entrega</option><option value="concluido">Concluído</option><option value="cancelado">Cancelado</option></select></div>
+              <div class="field full">
+                <div class="delivery-note">
+                  O estoque só será movimentado quando você usar <strong>Dar como entregue</strong>. Salvar ou editar o pedido não baixa estoque.
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -323,7 +379,14 @@ tbody tr:hover{background:#fbfdfe}
   <div class="modal-card small">
     <div class="modal-head"><div><h2>Detalhes do pedido</h2><p id="detalheSub"></p></div><button class="close-btn" data-close="modalDetalhe">✕</button></div>
     <div class="form-body" id="detalheBody"></div>
-    <div class="modal-foot"><button class="btn btn-secondary" data-close="modalDetalhe">Fechar</button><div class="right"><button class="btn btn-secondary" id="btnDetalheImprimir">Imprimir</button></div></div>
+    <div class="modal-foot">
+  <button class="btn btn-secondary" data-close="modalDetalhe">Fechar</button>
+  <div class="right">
+    <button class="btn btn-secondary" id="btnDetalheEditar" type="button">Editar</button>
+    <button class="btn btn-success" id="btnDetalheEntregar" type="button">Dar como entregue</button>
+    <button class="btn btn-secondary" id="btnDetalheImprimir">Imprimir</button>
+  </div>
+</div>
   </div>
 </div>
 
@@ -396,8 +459,6 @@ async function carregarBases(){
 }
 
 function montarSelects(){
-  $("cliente_id").innerHTML='<option value="">Selecione o cliente</option>'+clientes.map(x=>`<option value="${x.id}">${esc(x.nome_fantasia||x.nome)}${x.documento?` • ${esc(x.documento)}`:""}</option>`).join("");
-
   $("loja_id").innerHTML='<option value="">Selecione a loja</option>'+lojas
     .sort((a,b)=>(Number(!!b.principal)-Number(!!a.principal)) || String(a.nome||"").localeCompare(String(b.nome||""),"pt-BR"))
     .map(x=>`<option value="${x.id}">${esc(x.nome)}${x.principal?" • Principal":""}</option>`).join("");
@@ -410,6 +471,103 @@ function montarSelects(){
   $("vendedor_id").innerHTML='<option value="">Sem vendedor</option>'+vendedores.map(x=>`<option value="${x.id}">${esc(x.nome)}</option>`).join("");
   $("entregador_id").innerHTML='<option value="">Sem entregador</option>'+entregadores.map(x=>`<option value="${x.id}">${esc(x.nome)}</option>`).join("");
 }
+
+
+function normalizarBusca(v){
+  return String(v||"")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .toLowerCase()
+    .trim();
+}
+
+function nomeCliente(c){
+  return c?.nome_fantasia || c?.nome || "Cliente";
+}
+
+function selecionarCliente(c){
+  if(!c){
+    $("cliente_id").value="";
+    $("clienteBusca").value="";
+    $("clienteSelecionado").textContent="";
+    $("clienteSelecionado").classList.remove("show");
+    $("clienteClear").classList.remove("show");
+    $("clienteMenu").classList.remove("show");
+    return;
+  }
+
+  $("cliente_id").value=c.id;
+  $("clienteBusca").value=nomeCliente(c);
+  $("clienteSelecionado").innerHTML=
+    `<strong>${esc(nomeCliente(c))}</strong>`+
+    `${c.documento ? ` • ${esc(c.documento)}` : ""}`+
+    `${c.whatsapp||c.telefone ? ` • ${esc(c.whatsapp||c.telefone)}` : ""}`;
+  $("clienteSelecionado").classList.add("show");
+  $("clienteClear").classList.add("show");
+  $("clienteMenu").classList.remove("show");
+}
+
+function renderBuscaClientes(){
+  const q=normalizarBusca($("clienteBusca").value);
+
+  if(!q){
+    $("clienteMenu").classList.remove("show");
+    return;
+  }
+
+  const lista=clientes.filter(c=>{
+    const txt=normalizarBusca([
+      c.nome,
+      c.nome_fantasia,
+      c.documento,
+      c.telefone,
+      c.whatsapp,
+      c.email,
+      c.cidade
+    ].filter(Boolean).join(" "));
+    return txt.includes(q);
+  }).slice(0,15);
+
+  $("clienteMenu").innerHTML=lista.length
+    ? lista.map(c=>`
+        <div class="client-option" data-id="${c.id}">
+          <strong>${esc(nomeCliente(c))}</strong>
+          <small>${esc([
+            c.documento,
+            c.whatsapp||c.telefone,
+            c.email
+          ].filter(Boolean).join(" • ") || "Sem dados adicionais")}</small>
+        </div>
+      `).join("")
+    : '<div class="client-option"><small>Nenhum cliente encontrado.</small></div>';
+
+  $("clienteMenu").classList.add("show");
+
+  $("clienteMenu").querySelectorAll("[data-id]").forEach(el=>{
+    el.onclick=()=>{
+      const c=clientes.find(x=>x.id===el.dataset.id);
+      selecionarCliente(c);
+    };
+  });
+}
+
+$("clienteBusca").addEventListener("input",()=>{
+  $("cliente_id").value="";
+  $("clienteSelecionado").classList.remove("show");
+  $("clienteClear").classList.toggle("show",!!$("clienteBusca").value);
+  renderBuscaClientes();
+});
+
+$("clienteBusca").addEventListener("focus",()=>{
+  if($("clienteBusca").value && !$("cliente_id").value){
+    renderBuscaClientes();
+  }
+});
+
+$("clienteClear").addEventListener("click",()=>{
+  selecionarCliente(null);
+  $("clienteBusca").focus();
+});
 
 async function carregarPedidos(){
   $("loading").classList.add("show");$("tableWrap").style.display="none";$("empty").classList.remove("show");
@@ -439,11 +597,28 @@ function renderPedidos(){
     <td><div>${esc(pgLabel(x.forma_pagamento))}</div><div class="order-meta"><span class="badge ${x.status_pagamento==="pago"?"badge-paid":"badge-pending"}">${x.status_pagamento==="pago"?"Pago":"Pendente"}</span></div></td>
     <td class="money">${money.format(Number(x.total||0))}</td><td>${badgeStatus(x.status)}</td>
     <td><div class="actions">
-      <button class="icon-btn" onclick="verPedido('${x.id}')" title="Ver detalhes"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></svg></button>
-      ${x.status!=="cancelado" && x.status!=="concluido" ? `<button class="icon-btn edit" onclick="editarPedido('${x.id}')" title="Editar pedido"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>` : ""}
-      ${x.status!=="cancelado" && x.status!=="concluido" ? `<button class="icon-btn success" onclick="darComoEntregue('${x.id}')" title="Dar como entregue"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button>` : ""}
-      <button class="icon-btn" onclick="imprimirPedido('${x.id}')" title="Imprimir"><svg viewBox="0 0 24 24"><path d="M6 9V3h12v6"/><path d="M6 18h12v3H6z"/><path d="M6 14h12v4H6"/><path d="M6 9H4a2 2 0 0 0-2 2v5h4M18 9h2a2 2 0 0 1 2 2v5h-4"/></svg></button>
-      ${x.status!=="cancelado" && x.status!=="concluido" ? `<button class="icon-btn danger" onclick="cancelarPedido('${x.id}')" title="Cancelar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></svg></button>` : ""}
+      <button class="action-btn" onclick="verPedido('${x.id}')" title="Ver detalhes">
+        <svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+        Ver
+      </button>
+      ${x.status!=="cancelado" && x.status!=="concluido" ? `
+        <button class="action-btn edit" onclick="editarPedido('${x.id}')" title="Editar pedido">
+          <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          Editar
+        </button>
+        <button class="action-btn deliver" onclick="darComoEntregue('${x.id}')" title="Dar como entregue">
+          <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+          Dar como entregue
+        </button>
+      ` : ""}
+      <button class="action-btn" onclick="imprimirPedido('${x.id}')" title="Imprimir">
+        Imprimir
+      </button>
+      ${x.status!=="cancelado" && x.status!=="concluido" ? `
+        <button class="action-btn danger" onclick="cancelarPedido('${x.id}')" title="Cancelar pedido">
+          Cancelar
+        </button>
+      ` : ""}
     </div></td>
   </tr>`).join("")
 }
@@ -453,11 +628,16 @@ function novoPedido(){
   cart=[];
   produtoSelecionado=null;
   $("formPedido").reset();
+  selecionarCliente(null);
   $("pedidoTitulo").textContent="Novo pedido";
   $("pedidoSubtitulo").textContent="Venda completa com cliente, produtos, entrega e pagamento.";
   $("btnSalvarPedido").textContent="Salvar pedido";
   $("data_pedido").value=isoLocal();
   $("status").value="aberto";
+  $("status").disabled=false;
+  [...$("status").options].forEach(o=>{
+    o.disabled=(o.value==="concluido"||o.value==="cancelado");
+  });
   $("tipo_atendimento").value="retirada";
   const principal=lojas.find(x=>x.principal);
   $("loja_id").value=principal?.id||lojas[0]?.id||"";
@@ -498,7 +678,17 @@ async function editarPedido(id){
     $("pedidoSubtitulo").textContent="Altere os dados, itens, entrega ou pagamento do pedido.";
     $("btnSalvarPedido").textContent="Salvar alterações";
 
-    $("cliente_id").value=p.cliente_id||"";
+    const clienteAtual=clientes.find(x=>x.id===p.cliente_id);
+    if(clienteAtual){
+      selecionarCliente(clienteAtual);
+    }else{
+      $("cliente_id").value=p.cliente_id||"";
+      $("clienteBusca").value=p.cliente_nome||"";
+      $("clienteSelecionado").textContent=p.cliente_nome||"";
+      $("clienteSelecionado").classList.toggle("show",!!p.cliente_nome);
+      $("clienteClear").classList.toggle("show",!!p.cliente_nome);
+    }
+
     $("loja_id").value=p.loja_id||lojas.find(x=>x.principal)?.id||"";
     $("vendedor_id").value=p.vendedor_id||"";
     $("entregador_id").value=p.entregador_id||"";
@@ -518,6 +708,11 @@ async function editarPedido(id){
     }
 
     $("status").value=p.status||"aberto";
+    $("status").disabled=false;
+    [...$("status").options].forEach(o=>{
+      o.disabled=(o.value==="concluido"||o.value==="cancelado");
+    });
+
     $("forma_pagamento").value=p.forma_pagamento||"dinheiro";
     $("status_pagamento").value=p.status_pagamento||"pago";
     $("data_vencimento").value=p.data_vencimento||datePlus(30);
@@ -550,12 +745,47 @@ async function editarPedido(id){
 $("produtoBusca").addEventListener("input",()=>{
   const q=$("produtoBusca").value.trim().toLowerCase();produtoSelecionado=null;
   if(!q){$("produtoMenu").classList.remove("show");return}
-  const list=produtos.filter(x=>[x.nome,x.codigo,x.sku,x.categoria].filter(Boolean).join(" ").toLowerCase().includes(q)).slice(0,12);
-  $("produtoMenu").innerHTML=list.map(x=>`<div class="product-option" data-id="${x.id}"><strong>${esc(x.nome)}</strong><small>${esc(x.sku||x.codigo||"Sem código")} • ${money.format(Number(x.preco_venda||0))}${x.tipo==="produto"?` • estoque ${num.format(Number(x.estoque_atual||0))}`:""}</small></div>`).join("")||'<div class="product-option"><small>Nenhum item encontrado.</small></div>';
+  const lojaId=$("loja_id").value;
+
+  if(!lojaId){
+    toast("Selecione primeiro a loja / filial.","error");
+    $("produtoBusca").value="";
+    $("produtoMenu").classList.remove("show");
+    return;
+  }
+
+  const list=produtos.filter(x=>{
+    const bate=[x.nome,x.codigo,x.sku,x.categoria].filter(Boolean).join(" ").toLowerCase().includes(q);
+    if(!bate) return false;
+
+    if(x.tipo==="servico") return true;
+
+    // Se a API já fornece vínculo de lojas, respeita a filial.
+    if(Array.isArray(x.lojas_ids) && x.lojas_ids.length){
+      return x.lojas_ids.includes(lojaId);
+    }
+
+    return true;
+  }).slice(0,12);
+
+  $("produtoMenu").innerHTML=list.map(x=>{
+    const saldoLoja=(x.lojas||[]).find(l=>l.id===lojaId)?.estoque_atual;
+    const estoqueTxt=x.tipo==="produto"
+      ? ` • estoque ${num.format(Number(saldoLoja ?? x.estoque_atual ?? 0))}`
+      : "";
+
+    return `<div class="product-option" data-id="${x.id}">
+      <strong>${esc(x.nome)}</strong>
+      <small>${esc(x.sku||x.codigo||"Sem código")} • ${money.format(Number(x.preco_venda||0))}${estoqueTxt}</small>
+    </div>`;
+  }).join("")||'<div class="product-option"><small>Nenhum item disponível nesta loja.</small></div>';
   $("produtoMenu").classList.add("show");
   $("produtoMenu").querySelectorAll("[data-id]").forEach(el=>el.onclick=()=>{produtoSelecionado=produtos.find(x=>x.id===el.dataset.id);$("produtoBusca").value=produtoSelecionado.nome;$("itemPreco").value=Number(produtoSelecionado.preco_venda||0).toFixed(2).replace(".",",");$("produtoMenu").classList.remove("show")})
 });
-document.addEventListener("click",e=>{if(!e.target.closest(".product-results"))$("produtoMenu").classList.remove("show")});
+document.addEventListener("click",e=>{
+  if(!e.target.closest(".product-results")) $("produtoMenu").classList.remove("show");
+  if(!e.target.closest(".client-search-wrap")) $("clienteMenu").classList.remove("show");
+});
 $("btnAddItem").addEventListener("click",()=>{
   if(!produtoSelecionado){toast("Selecione um produto ou serviço.","error");return}
   const qtd=parseNum($("itemQtd").value), preco=parseNum($("itemPreco").value);
@@ -576,6 +806,11 @@ function totais(){const subtotal=cart.reduce((a,x)=>a+x.quantidade*x.preco_unita
 function calcTotais(){const t=totais();$("tSubtotal").textContent=money.format(t.subtotal);$("tDesconto").textContent=money.format(t.desconto);$("tFrete").textContent=money.format(t.frete);$("tTotal").textContent=money.format(t.total);const rec=parseNum($("valor_recebido").value);$("troco").value=money.format(Math.max(0,rec-t.total))}
 function atualizarPrazo(){const prazo=$("forma_pagamento").value==="prazo";$("termBox").classList.toggle("show",prazo);if(prazo){$("status_pagamento").value="pendente";if(!$("data_vencimento").value)$("data_vencimento").value=datePlus(30)}}
 $("forma_pagamento").addEventListener("change",atualizarPrazo);
+$("loja_id").addEventListener("change",()=>{
+  produtoSelecionado=null;
+  $("produtoBusca").value="";
+  $("produtoMenu").classList.remove("show");
+});
 
 function payloadPedido(){
   const t=totais();
@@ -621,10 +856,28 @@ async function verPedido(id){
       <div class="section"><div class="section-head"><div class="section-title">Itens</div></div><div class="section-body"><div class="cart-wrap"><table class="cart-table"><thead><tr><th>Item</th><th>Qtd.</th><th>Unit.</th><th>Desc.</th><th>Subtotal</th></tr></thead><tbody>${(p.itens||[]).map(i=>`<tr><td>${esc(i.nome)}</td><td>${num.format(Number(i.quantidade))}</td><td>${money.format(Number(i.preco_unitario))}</td><td>${money.format(Number(i.desconto||0))}</td><td class="money">${money.format(Number(i.subtotal||0))}</td></tr>`).join("")}</tbody></table></div></div></div>
       <div class="totals-box"><div class="total-line"><span>Subtotal</span><strong>${money.format(Number(p.subtotal||0))}</strong></div><div class="total-line"><span>Descontos</span><strong>${money.format(Number(p.desconto_total||0))}</strong></div><div class="total-line"><span>Frete</span><strong>${money.format(Number(p.frete||0))}</strong></div><div class="total-line final"><span>Total</span><strong>${money.format(Number(p.total||0))}</strong></div></div>
       ${p.observacoes?`<div style="margin-top:12px;font-size:11px"><strong>Observações:</strong><br>${esc(p.observacoes)}</div>`:""}
-    `;abrir("modalDetalhe")
+    `;
+
+    const podeAlterar=p.status!=="cancelado" && p.status!=="concluido";
+    $("btnDetalheEditar").style.display=podeAlterar?"inline-flex":"none";
+    $("btnDetalheEntregar").style.display=podeAlterar?"inline-flex":"none";
+
+    abrir("modalDetalhe")
   }catch(e){toast(e.message,"error")}
 }
 $("btnDetalheImprimir").addEventListener("click",()=>{if(pedidoAtual)montarImpressao(pedidoAtual)});
+$("btnDetalheEditar").addEventListener("click",()=>{
+  if(!pedidoAtual)return;
+  const id=pedidoAtual.id;
+  fechar("modalDetalhe");
+  editarPedido(id);
+});
+$("btnDetalheEntregar").addEventListener("click",async()=>{
+  if(!pedidoAtual)return;
+  const id=pedidoAtual.id;
+  fechar("modalDetalhe");
+  await darComoEntregue(id);
+});
 
 async function imprimirPedido(id){try{const d=await req(`${API_PEDIDOS}?id=${encodeURIComponent(id)}`);montarImpressao(d.item)}catch(e){toast(e.message,"error")}}
 function montarImpressao(p){
@@ -645,14 +898,41 @@ function montarImpressao(p){
 }
 
 async function darComoEntregue(id){
-  if(!confirm("Confirmar que este pedido foi entregue?")) return;
+  const p=pedidos.find(x=>x.id===id);
+
+  if(p?.status==="concluido"){
+    toast("Este pedido já foi entregue.","error");
+    return;
+  }
+
+  if(p?.status==="cancelado"){
+    toast("Pedido cancelado não pode ser entregue.","error");
+    return;
+  }
+
+  const msg=[
+    `Confirmar a entrega${p?.numero ? " do pedido #"+p.numero : ""}?`,
+    "",
+    "Ao confirmar:",
+    "• o pedido será concluído;",
+    "• o estoque da loja será baixado;",
+    "• os produtos de retorno configurados entrarão no estoque;",
+    "• as movimentações ficarão registradas."
+  ].join("\n");
+
+  if(!confirm(msg)) return;
+
   try{
     await req(`${API_PEDIDOS}?id=${encodeURIComponent(id)}`,{
       method:"PATCH",
-      body:JSON.stringify({status:"concluido", entregue:true})
+      body:JSON.stringify({status:"concluido"})
     });
-    toast("Pedido marcado como entregue.");
-    await carregarPedidos();
+
+    toast("Pedido entregue e estoque movimentado.");
+    await Promise.all([
+      carregarBases(),
+      carregarPedidos()
+    ]);
   }catch(e){
     toast(e.message,"error");
   }
