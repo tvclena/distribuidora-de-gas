@@ -62,6 +62,9 @@ tbody tr:hover{background:#fbfdfe}
 .icon-btn{width:32px;height:32px;border:1px solid var(--border);border-radius:8px;background:#fff;display:grid;place-items:center;cursor:pointer;color:#596871}
 .icon-btn:hover{background:#f4f8fa;color:var(--active)}
 .icon-btn.danger:hover{background:#fff1f1;color:var(--danger);border-color:#ffd0d0}
+.icon-btn.success{color:var(--success);border-color:#cfe8dc;background:#f7fcf9}
+.icon-btn.success:hover{background:#edf9f3;color:#157747;border-color:#b9dfca}
+.icon-btn.edit{color:var(--active)}
 .icon-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
 .loading{display:none;min-height:330px;align-items:center;justify-content:center}
 .loading.show{display:flex}
@@ -420,17 +423,110 @@ function renderPedidos(){
     <td><div>${esc(pgLabel(x.forma_pagamento))}</div><div class="order-meta"><span class="badge ${x.status_pagamento==="pago"?"badge-paid":"badge-pending"}">${x.status_pagamento==="pago"?"Pago":"Pendente"}</span></div></td>
     <td class="money">${money.format(Number(x.total||0))}</td><td>${badgeStatus(x.status)}</td>
     <td><div class="actions">
-      <button class="icon-btn" onclick="verPedido('${x.id}')" title="Ver"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></svg></button>
+      <button class="icon-btn" onclick="verPedido('${x.id}')" title="Ver detalhes"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></svg></button>
+      ${x.status!=="cancelado" && x.status!=="concluido" ? `<button class="icon-btn edit" onclick="editarPedido('${x.id}')" title="Editar pedido"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>` : ""}
+      ${x.status!=="cancelado" && x.status!=="concluido" ? `<button class="icon-btn success" onclick="darComoEntregue('${x.id}')" title="Dar como entregue"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button>` : ""}
       <button class="icon-btn" onclick="imprimirPedido('${x.id}')" title="Imprimir"><svg viewBox="0 0 24 24"><path d="M6 9V3h12v6"/><path d="M6 18h12v3H6z"/><path d="M6 14h12v4H6"/><path d="M6 9H4a2 2 0 0 0-2 2v5h4M18 9h2a2 2 0 0 1 2 2v5h-4"/></svg></button>
-      <button class="icon-btn danger" onclick="cancelarPedido('${x.id}')" title="Cancelar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></svg></button>
+      ${x.status!=="cancelado" && x.status!=="concluido" ? `<button class="icon-btn danger" onclick="cancelarPedido('${x.id}')" title="Cancelar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></svg></button>` : ""}
     </div></td>
   </tr>`).join("")
 }
 
 function novoPedido(){
-  editandoId=null;cart=[];produtoSelecionado=null;$("formPedido").reset();$("data_pedido").value=isoLocal();$("status").value="aberto";$("tipo_atendimento").value="retirada";$("forma_pagamento").value="dinheiro";$("status_pagamento").value="pago";$("desconto_geral").value="0,00";$("frete").value="0,00";$("itemQtd").value="1";$("data_vencimento").value=datePlus(30);$("condicao_pagamento").value="30 dias";atualizarPrazo();renderCart();abrir("modalPedido")
+  editandoId=null;
+  cart=[];
+  produtoSelecionado=null;
+  $("formPedido").reset();
+  $("pedidoTitulo").textContent="Novo pedido";
+  $("pedidoSubtitulo").textContent="Venda completa com cliente, produtos, entrega e pagamento.";
+  $("btnSalvarPedido").textContent="Salvar pedido";
+  $("data_pedido").value=isoLocal();
+  $("status").value="aberto";
+  $("tipo_atendimento").value="retirada";
+  $("forma_pagamento").value="dinheiro";
+  $("status_pagamento").value="pago";
+  $("desconto_geral").value="0,00";
+  $("frete").value="0,00";
+  $("itemQtd").value="1";
+  $("data_vencimento").value=datePlus(30);
+  $("condicao_pagamento").value="30 dias";
+  atualizarPrazo();
+  renderCart();
+  abrir("modalPedido");
 }
 $("btnNovo").addEventListener("click",novoPedido);
+
+
+async function editarPedido(id){
+  try{
+    const d=await req(`${API_PEDIDOS}?id=${encodeURIComponent(id)}`);
+    const p=d.item;
+    if(!p) throw new Error("Pedido não encontrado.");
+
+    if(p.status==="cancelado"){
+      toast("Pedido cancelado não pode ser editado.","error");
+      return;
+    }
+
+    if(p.status==="concluido"){
+      toast("Pedido já entregue/concluído não pode ser editado.","error");
+      return;
+    }
+
+    editandoId=p.id;
+    produtoSelecionado=null;
+
+    $("pedidoTitulo").textContent=`Editar pedido #${p.numero}`;
+    $("pedidoSubtitulo").textContent="Altere os dados, itens, entrega ou pagamento do pedido.";
+    $("btnSalvarPedido").textContent="Salvar alterações";
+
+    $("cliente_id").value=p.cliente_id||"";
+    $("vendedor_id").value=p.vendedor_id||"";
+    $("entregador_id").value=p.entregador_id||"";
+    $("tipo_atendimento").value=p.tipo_atendimento||"retirada";
+
+    if(p.data_pedido){
+      const dt=new Date(p.data_pedido);
+      $("data_pedido").value=isoLocal(dt);
+    }else{
+      $("data_pedido").value=isoLocal();
+    }
+
+    if(p.previsao_entrega){
+      $("previsao_entrega").value=isoLocal(new Date(p.previsao_entrega));
+    }else{
+      $("previsao_entrega").value="";
+    }
+
+    $("status").value=p.status||"aberto";
+    $("forma_pagamento").value=p.forma_pagamento||"dinheiro";
+    $("status_pagamento").value=p.status_pagamento||"pago";
+    $("data_vencimento").value=p.data_vencimento||datePlus(30);
+    $("condicao_pagamento").value=p.condicao_pagamento||"30 dias";
+    $("valor_recebido").value=Number(p.valor_recebido||0).toFixed(2).replace(".",",");
+    $("observacao_pagamento").value=p.observacao_pagamento||"";
+    $("desconto_geral").value=Number(p.desconto_geral||0).toFixed(2).replace(".",",");
+    $("frete").value=Number(p.frete||0).toFixed(2).replace(".",",");
+    $("observacoes").value=p.observacoes||"";
+
+    cart=(p.itens||[]).map(i=>({
+      produto_id:i.produto_id,
+      nome:i.nome,
+      codigo:i.codigo,
+      sku:i.sku,
+      unidade:i.unidade||"UN",
+      quantidade:Number(i.quantidade||0),
+      preco_unitario:Number(i.preco_unitario||0),
+      desconto:Number(i.desconto||0)
+    }));
+
+    atualizarPrazo();
+    renderCart();
+    abrir("modalPedido");
+  }catch(e){
+    toast(e.message,"error");
+  }
+}
 
 $("produtoBusca").addEventListener("input",()=>{
   const q=$("produtoBusca").value.trim().toLowerCase();produtoSelecionado=null;
@@ -482,9 +578,15 @@ async function salvarPedido(imprimir=false){
   if($("forma_pagamento").value==="prazo"&&!$("data_vencimento").value){toast("Informe o vencimento.","error");return}
   const btn=$("btnSalvarPedido");btn.disabled=true;$("btnSalvarImprimir").disabled=true;
   try{
-    const d=await req(API_PEDIDOS,{method:"POST",body:JSON.stringify(payloadPedido())});
-    toast("Pedido salvo com sucesso.");fechar("modalPedido");await carregarPedidos();
-    if(imprimir && d.item?.id) await imprimirPedido(d.item.id)
+    const url=editandoId ? `${API_PEDIDOS}?id=${encodeURIComponent(editandoId)}` : API_PEDIDOS;
+    const method=editandoId ? "PUT" : "POST";
+    const d=await req(url,{method,body:JSON.stringify(payloadPedido())});
+    toast(editandoId ? "Pedido atualizado com sucesso." : "Pedido salvo com sucesso.");
+    const idSalvo=d.item?.id||editandoId;
+    editandoId=null;
+    fechar("modalPedido");
+    await carregarPedidos();
+    if(imprimir && idSalvo) await imprimirPedido(idSalvo)
   }catch(e){toast(e.message,"error")}
   finally{btn.disabled=false;$("btnSalvarImprimir").disabled=false}
 }
@@ -521,7 +623,33 @@ function montarImpressao(p){
   </div>`;setTimeout(()=>window.print(),80)
 }
 
-async function cancelarPedido(id){if(!confirm("Cancelar este pedido?"))return;try{await req(`${API_PEDIDOS}?id=${encodeURIComponent(id)}`,{method:"PATCH",body:JSON.stringify({status:"cancelado"})});toast("Pedido cancelado.");await carregarPedidos()}catch(e){toast(e.message,"error")}}
+async function darComoEntregue(id){
+  if(!confirm("Confirmar que este pedido foi entregue?")) return;
+  try{
+    await req(`${API_PEDIDOS}?id=${encodeURIComponent(id)}`,{
+      method:"PATCH",
+      body:JSON.stringify({status:"concluido", entregue:true})
+    });
+    toast("Pedido marcado como entregue.");
+    await carregarPedidos();
+  }catch(e){
+    toast(e.message,"error");
+  }
+}
+
+async function cancelarPedido(id){
+  if(!confirm("Cancelar este pedido?"))return;
+  try{
+    await req(`${API_PEDIDOS}?id=${encodeURIComponent(id)}`,{
+      method:"PATCH",
+      body:JSON.stringify({status:"cancelado"})
+    });
+    toast("Pedido cancelado.");
+    await carregarPedidos();
+  }catch(e){
+    toast(e.message,"error");
+  }
+}
 
 $("btnEquipe").addEventListener("click",async()=>{abrir("modalEquipe");await carregarEquipe()});
 async function carregarEquipe(){try{const d=await req(API_EQUIPE);equipe=d.items||[];renderEquipe();montarSelects()}catch(e){toast(e.message,"error")}}
