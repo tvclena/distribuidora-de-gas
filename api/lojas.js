@@ -24,6 +24,9 @@ function normalize(b={}){
     responsavel:txt(b.responsavel,120),
     telefone:txt(b.telefone,30),
     whatsapp:txt(b.whatsapp,30),
+
+    pix_chave:txt(b.pix_chave,180),
+
     email:txt(b.email,180)?.toLowerCase()||null,
     cep:txt(b.cep,12),
     logradouro:txt(b.logradouro,180),
@@ -52,84 +55,187 @@ export default async function handler(req,res){
 
   try{
     if(req.method==="GET"){
-      const {data,error}=await supabase.from("lojas").select("*").eq("deletado",false).order("principal",{ascending:false}).order("nome",{ascending:true});
+      const {data,error}=await supabase
+        .from("lojas")
+        .select("*")
+        .eq("deletado",false)
+        .order("principal",{ascending:false})
+        .order("nome",{ascending:true});
+
       if(error)throw error;
-      return res.status(200).json({ok:true,items:data||[]});
+
+      return res.status(200).json({
+        ok:true,
+        items:data||[]
+      });
     }
 
     if(req.method==="POST"){
       const p=normalize(req.body);
-      if(!p.nome||!p.codigo)return res.status(400).json({error:"Informe nome e código da loja."});
+
+      if(!p.nome||!p.codigo){
+        return res.status(400).json({
+          error:"Informe nome e código da loja."
+        });
+      }
 
       if(p.principal){
-        await supabase.from("lojas").update({principal:false}).eq("deletado",false);
+        await supabase
+          .from("lojas")
+          .update({principal:false})
+          .eq("deletado",false);
       }
 
       p.criado_por=auth.user.id;
       p.criado_por_email=auth.user.email;
 
-      const {data,error}=await supabase.from("lojas").insert(p).select("*").single();
+      const {data,error}=await supabase
+        .from("lojas")
+        .insert(p)
+        .select("*")
+        .single();
+
       if(error)throw error;
 
-      return res.status(201).json({ok:true,item:data});
+      return res.status(201).json({
+        ok:true,
+        item:data
+      });
     }
 
     if(req.method==="PATCH"){
       const id=String(req.query?.id||"").trim();
-      if(!id)return res.status(400).json({error:"ID não informado."});
+
+      if(!id){
+        return res.status(400).json({
+          error:"ID não informado."
+        });
+      }
 
       if(req.query?.acao==="principal"){
-        await supabase.from("lojas").update({principal:false,atualizado_em:new Date().toISOString()}).eq("deletado",false);
-        const {data,error}=await supabase.from("lojas").update({
-          principal:true,
-          atualizado_em:new Date().toISOString(),
-          atualizado_por:auth.user.id,
-          atualizado_por_email:auth.user.email
-        }).eq("id",id).eq("deletado",false).select("*").single();
+        await supabase
+          .from("lojas")
+          .update({
+            principal:false,
+            atualizado_em:new Date().toISOString()
+          })
+          .eq("deletado",false);
+
+        const {data,error}=await supabase
+          .from("lojas")
+          .update({
+            principal:true,
+            atualizado_em:new Date().toISOString(),
+            atualizado_por:auth.user.id,
+            atualizado_por_email:auth.user.email
+          })
+          .eq("id",id)
+          .eq("deletado",false)
+          .select("*")
+          .single();
+
         if(error)throw error;
-        return res.status(200).json({ok:true,item:data});
+
+        return res.status(200).json({
+          ok:true,
+          item:data
+        });
       }
 
       const p=normalize(req.body);
-      if(!p.nome||!p.codigo)return res.status(400).json({error:"Informe nome e código da loja."});
+
+      if(!p.nome||!p.codigo){
+        return res.status(400).json({
+          error:"Informe nome e código da loja."
+        });
+      }
 
       if(p.principal){
-        await supabase.from("lojas").update({principal:false}).neq("id",id).eq("deletado",false);
+        await supabase
+          .from("lojas")
+          .update({principal:false})
+          .neq("id",id)
+          .eq("deletado",false);
       }
 
       p.atualizado_em=new Date().toISOString();
       p.atualizado_por=auth.user.id;
       p.atualizado_por_email=auth.user.email;
 
-      const {data,error}=await supabase.from("lojas").update(p).eq("id",id).eq("deletado",false).select("*").single();
+      const {data,error}=await supabase
+        .from("lojas")
+        .update(p)
+        .eq("id",id)
+        .eq("deletado",false)
+        .select("*")
+        .single();
+
       if(error)throw error;
 
-      return res.status(200).json({ok:true,item:data});
+      return res.status(200).json({
+        ok:true,
+        item:data
+      });
     }
 
     if(req.method==="DELETE"){
       const id=String(req.query?.id||"").trim();
-      if(!id)return res.status(400).json({error:"ID não informado."});
 
-      const {data:loja,error:readError}=await supabase.from("lojas").select("principal").eq("id",id).single();
+      if(!id){
+        return res.status(400).json({
+          error:"ID não informado."
+        });
+      }
+
+      const {data:loja,error:readError}=await supabase
+        .from("lojas")
+        .select("principal")
+        .eq("id",id)
+        .single();
+
       if(readError)throw readError;
-      if(loja?.principal)return res.status(409).json({error:"Defina outra loja como principal antes de excluir esta unidade."});
 
-      const {error}=await supabase.from("lojas").update({
-        deletado:true,ativo:false,atualizado_em:new Date().toISOString(),
-        atualizado_por:auth.user.id,atualizado_por_email:auth.user.email
-      }).eq("id",id);
+      if(loja?.principal){
+        return res.status(409).json({
+          error:"Defina outra loja como principal antes de excluir esta unidade."
+        });
+      }
+
+      const {error}=await supabase
+        .from("lojas")
+        .update({
+          deletado:true,
+          ativo:false,
+          atualizado_em:new Date().toISOString(),
+          atualizado_por:auth.user.id,
+          atualizado_por_email:auth.user.email
+        })
+        .eq("id",id);
+
       if(error)throw error;
 
-      return res.status(200).json({ok:true});
+      return res.status(200).json({
+        ok:true
+      });
     }
 
     res.setHeader("Allow","GET, POST, PATCH, DELETE");
-    return res.status(405).json({error:"Método não permitido."});
+
+    return res.status(405).json({
+      error:"Método não permitido."
+    });
 
   }catch(error){
     console.error("LOJAS_ERROR",error);
-    if(error?.code==="23505")return res.status(409).json({error:"Já existe uma loja com este código ou CNPJ."});
-    return res.status(500).json({error:error?.message||"Erro interno."});
+
+    if(error?.code==="23505"){
+      return res.status(409).json({
+        error:"Já existe uma loja com este código ou CNPJ."
+      });
+    }
+
+    return res.status(500).json({
+      error:error?.message||"Erro interno."
+    });
   }
 }
